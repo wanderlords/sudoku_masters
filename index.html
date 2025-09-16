@@ -822,10 +822,10 @@
            
             pauseBtn.addEventListener('click', togglePause);
             resumeButton.addEventListener('click', togglePause);
-            restartButton.addEventListener('click', () => genericClickHandler(() => { pauseModal.classList.add('hidden'); resetGame(); }));
+            restartButton.addEventListener('click', () => genericClickHandler(() => { pauseModal.classList.add('hidden'); resetGame(); setTimeout(adjustBoardSize, 0); }));
             mainMenuBtnFromPause.addEventListener('click', () => genericClickHandler(() => { pauseModal.classList.add('hidden'); clearSavedGame(); showMainMenu(); }));
             extraLifeBtn.addEventListener('click', getExtraLife);
-            restartGameOverBtn.addEventListener('click', () => genericClickHandler(() => { gameOverModal.classList.add('hidden'); resetGame(); }));
+            restartGameOverBtn.addEventListener('click', () => genericClickHandler(() => { gameOverModal.classList.add('hidden'); resetGame(); setTimeout(adjustBoardSize, 0); }));
             mainMenuGameOverBtn.addEventListener('click', () => genericClickHandler(() => { gameOverModal.classList.add('hidden'); clearSavedGame(); showMainMenu(); }));
             newGameWinBtn.addEventListener('click', () => genericClickHandler(() => {
                 winModal.classList.add('hidden');
@@ -892,5 +892,6 @@
     </script>
 </body>
 </html>
+
 
 
