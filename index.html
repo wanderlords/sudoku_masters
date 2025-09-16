@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Судоку</title>
+    <!-- VK Bridge -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <!-- Tone.js for Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-family: 'Nunito', sans-serif;
+            --bg-color: #f0f2f5;
+            --text-color: #1c1e21;
+            --text-color-secondary: #606770;
+            --primary-color: #1877f2;
+            --accent-color: #fa383e;
+            --border-color: #dddfe2;
+            --cell-bg: #ffffff;
+            --cell-highlight-area-bg: #0000000e;
+            --cell-highlight-number-bg: #008cff2c;
+            --cell-selected-bg: #008cff94;
+            --cell-error-color: #fa383e;
+            --cell-initial-color: #1c1e21;
+            --cell-player-color: #1877f2;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --modal-bg: rgba(240, 242, 245, 0.8);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #18191a;
+            --text-color: #e4e6eb;
+            --text-color-secondary: #b0b3b8;
+            --primary-color: #2d88ff;
+            --border-color: #3a3a3c;
+            --cell-bg: #242526;
+            --cell-highlight-area-bg: #ffffff14;
+            --cell-highlight-number-bg: #4599ff3a;
+            --cell-selected-bg: #4599ff96;
+            --cell-initial-color: #e4e6eb;
+            --cell-player-color: #4599ff;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --modal-bg: rgba(24, 25, 26, 0.8);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overscroll-behavior-y: contain; }
+        body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
+       
+        #app { width: 100%; height: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; padding-top: env(safe-area-inset-top, 10px); padding-bottom: env(safe-area-inset-bottom, 10px); user-select: none; -webkit-user-select: none; }
+        .hidden { display: none !important; }
+
+        #main-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            gap: clamp(1rem, 4vh, 2rem);
+        }
+        .title-container { text-align: center; }
+        .title-container h1 { font-size: clamp(2.5rem, 12vw, 4rem); font-weight: 800; color: var(--primary-color); }
+        .title-container p { font-size: clamp(1rem, 4vw, 1.5rem); font-weight: 700; color: var(--text-color-secondary); margin-top: -10px; }
+        .difficulty-buttons { display: flex; flex-direction: column; gap: clamp(10px, 2vh, 15px); width: 100%; max-width: 320px; }
+        .menu-button {
+            background-color: var(--cell-bg);
+            color: var(--text-color);
+            font-size: clamp(1rem, 2.5vh, 1.2rem);
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+            padding: clamp(12px, 2.2vh, 18px) 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+        .menu-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow-color); }
+        .stats-button { background-color: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+       
+        #menu-footer { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .theme-switcher { display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-color-secondary); }
+        .theme-switcher svg { width: 24px; height: 24px; stroke: var(--text-color); }
+        .theme-toggle { width: 44px; height: 24px; background-color: var(--border-color); border-radius: 12px; position: relative; transition: background-color 0.3s; }
+        .theme-toggle::before { content: ''; position: absolute; width: 18px; height: 18px; background-color: var(--cell-bg); border-radius: 50%; top: 3px; left: 3px; transition: transform 0.3s ease; }
+        [data-theme="dark"] .theme-toggle { background-color: var(--primary-color); }
+        [data-theme="dark"] .theme-toggle::before { transform: translateX(20px); }
+
+        #game-screen {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 5px;
+        }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 5px; width: 100%; }
+        .icon-button { background: none; border: none; cursor: pointer; width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; color: var(--text-color-secondary); }
+        .icon-button svg { width: 28px; height: 28px; }
+        #game-info { text-align: center; }
+        #difficulty-display { font-weight: 700; font-size: 1.1rem; }
+        #timer { font-size: 1rem; color: var(--text-color-secondary); }
+        #lives { display: flex; gap: 4px; color: var(--accent-color); }
+       
+        #board-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            width: 100%;
+            min-height: 0;
+        }
+       
+        #sudoku-board {
+            border-collapse: collapse;
+            border: 3px solid var(--text-color);
+            aspect-ratio: 1 / 1;
+            margin: auto;
+        }
+        #sudoku-board td {
+            border: 1px solid var(--border-color);
+            text-align: center;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 11.111%;
+            height: 11.111%;
+        }
+       
+        #sudoku-board td:nth-child(3n) { border-right: 2px solid var(--text-color); }
+        #sudoku-board tr:nth-child(3n) { border-bottom: 2px solid var(--text-color); }
+        #sudoku-board td:first-child { border-left: 2px solid var(--text-color); }
+        #sudoku-board tr:first-child td { border-top: 2px solid var(--text-color); }
+
+        .initial-number { color: var(--cell-initial-color); font-weight: 800; }
+        .player-number { color: var(--cell-player-color); }
+        .incorrect { color: var(--cell-error-color) !important; animation: shake 0.3s; }
+        .highlight-area { background-color: var(--cell-highlight-area-bg); }
+        .highlight-number { background-color: var(--cell-highlight-number-bg) !important; }
+        .selected { background-color: var(--cell-selected-bg) !important; }
+
+        #controls { display: flex; flex-direction: column; gap: clamp(5px, 1.5vh, 10px); padding: 10px; width: 100%; }
+        #number-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: min(2vw, 8px); }
+        #action-pad { display: flex; justify-content: space-between; gap: min(2vw, 8px); }
+        .control-button {
+            background-color: var(--cell-bg);
+            color: var(--text-color);
+            font-size: clamp(1rem, 4vh, 1.5rem);
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: clamp(40px, 12vw, 60px);
+        }
+        #number-pad .control-button { aspect-ratio: 1 / 1.2; height: auto; }
+        #action-pad .control-button { flex: 1; position: relative; }
+       
+        #action-pad .control-button svg { width: clamp(20px, 6vw, 28px); height: clamp(20px, 6vw, 28px); }
+        .control-button:active { transform: scale(0.95); background-color: var(--border-color); }
+       
+        .ad-badge {
+            position: absolute;
+            top: 2px; right: 2px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--modal-bg); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; animation: fadeIn 0.3s ease; }
+        .modal-content { background-color: var(--cell-bg); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); text-align: center; width: 100%; max-width: 400px; max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-body { flex-grow: 1; overflow-y: auto; text-align: left; padding-right: 10px; margin-right: -10px; }
+        .modal-content h2 { font-size: 2rem; margin-bottom: 15px; }
+        .modal-content h3 { font-size: 1.5rem; margin-bottom: 20px; }
+        .modal-content p { margin-bottom: 25px; font-size: 1.1rem; color: var(--text-color-secondary); }
+        .modal-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; flex-shrink: 0; }
+        .modal-button { font-size: 1.1rem; padding: 15px; }
+        .primary { background-color: var(--primary-color); color: #fff; border: none; }
+       
+        #stats-table-container { width: 100%; }
+        .stats-table { width: 100%; border-collapse: collapse; }
+        .stats-table th, .stats-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        .stats-table th { font-size: 0.9rem; font-weight: 700; color: var(--text-color-secondary); }
+        .stats-table td:first-child { font-weight: 700; text-align: left; }
+        .stats-table tbody tr:last-child td { border-bottom: none; }
+       
+        @media screen and (max-width: 480px) {
+            .stats-table { font-size: clamp(0.8rem, 3vw, 1rem); }
+            .stats-table th, .stats-table td { padding: 8px 10px; }
+            .stats-table thead { display: none; }
+            .stats-table tr { display: block; border: 1px solid var(--border-color); margin-bottom: 1em; border-radius: 8px; }
+            .stats-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border: none;
+                border-bottom: 1px solid var(--bg-color);
+                text-align: right;
+                padding: 10px 15px;
+            }
+            .stats-table td:last-child { border-bottom: 0; }
+            .stats-table td:before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: var(--text-color-secondary);
+                text-align: left;
+                margin-right: 10px;
+            }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    </style>
+</head>
+<body>
+    <audio id="bg-music" loop src="music.mp3"></audio>
+    <div id="app">
+        <div id="main-menu">
+            <div class="title-container">
+                <h1>Судоку</h1>
+                <p>world</p>
+            </div>
+            <div class="difficulty-buttons">
+                <button class="menu-button" data-difficulty="easy">Легкий</button>
+                <button class="menu-button" data-difficulty="medium">Средний</button>
+                <button class="menu-button" data-difficulty="hard">Сложный</button>
+                <button class="menu-button" data-difficulty="expert">Эксперт</button>
+                <button class="menu-button" data-difficulty="extreme">Экстремальный</button>
+                <button id="stats-button" class="menu-button stats-button">Статистика</button>
+            </div>
+            <div id="menu-footer">
+                <div class="theme-switcher">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <div class="theme-toggle"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="game-screen" class="hidden">
+            <header>
+                 <div style="display: flex; align-items: center;">
+                    <button id="pause-btn" class="icon-button">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                    </button>
+                    <button id="sound-toggle-btn" class="icon-button">
+                        <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                        <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                    </button>
+                 </div>
+                <div id="game-info">
+                    <div id="difficulty-display"></div>
+                    <div id="timer">00:00</div>
+                </div>
+                <div id="lives"></div>
+             </header>
+            <div id="board-container">
+                <table id="sudoku-board"></table>
+            </div>
+            <div id="controls">
+                <div id="number-pad"></div>
+                <div id="action-pad"></div>
+            </div>
+        </div>
+
+        <div id="continue-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2>Сохраненная игра</h2>
+                <p>У вас есть незаконченная игра. Хотите продолжить?</p>
+                <div class="modal-buttons">
+                    <button id="continue-game-btn" class="menu-button primary">Продолжить</button>
+                    <button id="new-game-continue-btn" class="menu-button">Начать заново</button>
+                </div>
+            </div>
+        </div>
+        <div id="pause-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2>Пауза</h2>
+                <div class="modal-buttons">
+                    <button id="resume-button" class="menu-button primary">Продолжить</button>
+                    <button id="restart-button" class="menu-button">Начать заново</button>
+                    <button id="main-menu-btn-pause" class="menu-button">Главное меню</button>
+                </div>
+            </div>
+        </div>
+        <div id="game-over-modal" class="modal-overlay hidden">
+             <div class="modal-content">
+                <h2>Вы проиграли</h2>
+                <div class="modal-buttons">
+                    <button id="extra-life-btn" class="menu-button primary">Доп. жизнь (Ad)</button>
+                    <button id="restart-game-over-btn" class="menu-button">Начать заново</button>
+                    <button id="main-menu-game-over-btn" class="menu-button">Главное меню</button>
+                </div>
+            </div>
+        </div>
+        <div id="win-modal" class="modal-overlay hidden">
+             <div class="modal-content">
+                <h2>Поздравляем!</h2>
+                <p id="completion-time"></p>
+                <div class="modal-buttons">
+                    <button id="new-game-win-btn" class="menu-button primary">Новая игра</button>
+                    <button id="main-menu-win-btn" class="menu-button">Главное меню</button>
+                </div>
+            </div>
+        </div>
+        <div id="stats-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3>Статистика</h3>
+                <div class="modal-body">
+                     <div id="stats-table-container"></div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="close-stats-btn" class="menu-button primary">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        vkBridge.send('VKWebAppInit');
+        document.addEventListener('contextmenu', e => e.preventDefault());
+       
+        const mainMenu = document.getElementById('main-menu');
+        const gameScreen = document.getElementById('game-screen');
+        const sudokuBoard = document.getElementById('sudoku-board');
+        const numberPad = document.getElementById('number-pad');
+        const actionPad = document.getElementById('action-pad');
+        const difficultyDisplay = document.getElementById('difficulty-display');
+        const timerDisplay = document.getElementById('timer');
+        const livesDisplay = document.getElementById('lives');
+        const pauseBtn = document.getElementById('pause-btn');
+        const themeSwitcher = document.querySelector('.theme-switcher');
+        const difficultyButtonsContainer = document.querySelector('.difficulty-buttons');
+        // Modals
+        const continueModal = document.getElementById('continue-modal');
+        const pauseModal = document.getElementById('pause-modal');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const winModal = document.getElementById('win-modal');
+        const statsModal = document.getElementById('stats-modal');
+        // Modal Buttons
+        const continueGameBtn = document.getElementById('continue-game-btn');
+        const newGameContinueBtn = document.getElementById('new-game-continue-btn');
+        const resumeButton = document.getElementById('resume-button');
+        const restartButton = document.getElementById('restart-button');
+        const mainMenuBtnFromPause = document.getElementById('main-menu-btn-pause');
+        const extraLifeBtn = document.getElementById('extra-life-btn');
+        const restartGameOverBtn = document.getElementById('restart-game-over-btn');
+        const mainMenuGameOverBtn = document.getElementById('main-menu-game-over-btn');
+        const completionTimeDisplay = document.getElementById('completion-time');
+        const newGameWinBtn = document.getElementById('new-game-win-btn');
+        const mainMenuWinBtn = document.getElementById('main-menu-win-btn');
+        const statsButton = document.getElementById('stats-button');
+        const closeStatsBtn = document.getElementById('close-stats-btn');
+        // Audio
+        const bgMusic = document.getElementById('bg-music');
+        const soundToggleBtn = document.getElementById('sound-toggle-btn');
+        
+        let vkUserId = null;
+        let wasMusicPlaying = false;
+        let timerInterval;
+        let startTime;
+        let elapsedTime = 0;
+        const difficultyLevels = { easy: 30, medium: 40, hard: 50, expert: 55, extreme: 60 };
+        const difficultyMap = { easy: 'Легкий', medium: 'Средний', hard: 'Сложный', expert: 'Эксперт', extreme: 'Экстремальный' };
+        let currentLevel = '';
+        let selectedCell = null;
+        let solutionGrid = [], initialGrid = [], playerGrid = [];
+        let lives = 3;
+        let isPaused = false;
+        let stats = {};
+        let isMuted = false;
+        let savedGameState = null;
+
+        const audioManager = {
+            clickSynth: null, winSynth: null, errorSynth: null, isReady: false,
+            init() {
+                this.clickSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+                this.clickSynth.volume.value = -20;
+                this.winSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle8' }, envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
+                this.winSynth.volume.value = -10;
+                this.errorSynth = new Tone.MonoSynth({ oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination();
+                this.errorSynth.volume.value = -15;
+                bgMusic.volume = 0.05;
+                this.isReady = true;
+            },
+            playSound(sound) {
+                if (!this.isReady || isMuted) return;
+                try {
+                    const now = Tone.now();
+                    if (sound === 'click') this.clickSynth.triggerAttackRelease('E5', '8n', now);
+                    if (sound === 'win') {
+                        const notes = ["G4", "B4", "D5", "G5"];
+                        notes.forEach((note, i) => this.winSynth.triggerAttackRelease(note, "16n", now + i * 0.1));
+                    }
+                    if (sound === 'error') this.errorSynth.triggerAttackRelease('F#3', '8n', now);
+                } catch(e) { console.error("Sound play error", e); }
+            },
+            toggleMute(forceState) {
+                isMuted = (typeof forceState === 'boolean') ? forceState : !isMuted;
+                document.getElementById('sound-on-icon').classList.toggle('hidden', isMuted);
+                document.getElementById('sound-off-icon').classList.toggle('hidden', !isMuted);
+                Tone.Master.mute = isMuted;
+                if (isMuted) {
+                    bgMusic.pause();
+                } else {
+                    if (!mainMenu.classList.contains('hidden') || !gameScreen.classList.contains('hidden')) {
+                         bgMusic.play().catch(e => {});
+                    }
+                }
+                if(typeof forceState === 'undefined') saveData();
+            }
+        };
+
+        async function init() {
+            try {
+                const user = await vkBridge.send('VKWebAppGetUserInfo');
+                vkUserId = user.id;
+            } catch (error) {
+                console.error("VK User Info Error:", error);
+                vkUserId = 'test_user';
+            }
+            await loadData();
+            loadTheme();
+            addEventListeners();
+            if (savedGameState) {
+                continueModal.classList.remove('hidden');
+            } else {
+                showMainMenu();
+            }
+        }
+
+        async function saveData() {
+            if (!vkUserId) return;
+            const hasProgress = playerGrid.length > 0 && playerGrid.some(row => row.some(cell => cell !== null));
+            const gameStateToSave = hasProgress ? { playerGrid, initialGrid, solutionGrid, currentLevel, lives, elapsedTime } : null;
+            const dataToSave = JSON.stringify({ stats, isMuted, savedGame: gameStateToSave });
+            try {
+                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_data_${vkUserId}`, value: dataToSave });
+            } catch (e) {
+                console.error("VK save error:", e);
+                localStorage.setItem(`sudoku_data_${vkUserId}`, dataToSave);
+            }
+        }
+
+        function clearSavedGame() {
+            savedGameState = null;
+            const dataToSave = JSON.stringify({ stats, isMuted, savedGame: null });
+             if (!vkUserId) return;
+             try {
+                vkBridge.send('VKWebAppStorageSet', { key: `sudoku_data_${vkUserId}`, value: dataToSave });
+            } catch (e) {
+                localStorage.setItem(`sudoku_data_${vkUserId}`, dataToSave);
+            }
+        }
+       
+        async function loadData() {
+            if (!vkUserId) return;
+            let loadedData = null;
+            try {
+                const response = await vkBridge.send('VKWebAppStorageGet', { keys: [`sudoku_data_${vkUserId}`] });
+                if (response.keys[0]?.value) {
+                    loadedData = JSON.parse(response.keys[0].value);
+                }
+            } catch (e) {
+                console.error("VK load error:", e);
+                const localData = localStorage.getItem(`sudoku_data_${vkUserId}`);
+                if (localData) loadedData = JSON.parse(localData);
+            }
+            if (loadedData) {
+                stats = loadedData.stats || {};
+                audioManager.toggleMute(loadedData.isMuted || false);
+                savedGameState = loadedData.savedGame || null;
+            }
+        }
+
+        function showMainMenu() {
+            mainMenu.classList.remove('hidden');
+            gameScreen.classList.add('hidden');
+            if(!isMuted) bgMusic.play().catch(e=>{});
+            vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
+        }
+
+        function startGame(level) {
+            currentLevel = level;
+            difficultyDisplay.textContent = difficultyMap[level];
+            mainMenu.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            resetGame();
+            vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
+            setTimeout(adjustBoardSize, 0);
+        }
+
+        function continueGame() {
+            if (!savedGameState) return;
+            ({ playerGrid, initialGrid, solutionGrid, currentLevel, lives, elapsedTime } = savedGameState);
+            
+            difficultyDisplay.textContent = difficultyMap[currentLevel];
+            mainMenu.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            isPaused = false;
+            selectedCell = null;
+            clearInterval(timerInterval);
+            updateLivesDisplay();
+            drawBoard();
+            startTimer();
+            if(!isMuted) bgMusic.play().catch(e=>{});
+            vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
+            setTimeout(adjustBoardSize, 0);
+        }
+       
+        function resetGame() {
+            lives = 3;
+            elapsedTime = 0;
+            isPaused = false;
+            selectedCell = null;
+            clearInterval(timerInterval);
+            updateLivesDisplay();
+            generateSudoku();
+            drawBoard();
+            startTimer();
+        }
+
+        function generateSudoku() {
+            solutionGrid = createFullGrid();
+            initialGrid = JSON.parse(JSON.stringify(solutionGrid));
+            removeCells(initialGrid, difficultyLevels[currentLevel]);
+            playerGrid = JSON.parse(JSON.stringify(initialGrid));
+        }
+
+        function drawBoard() {
+            sudokuBoard.innerHTML = '';
+            for (let r = 0; r < 9; r++) {
+                const row = sudokuBoard.insertRow();
+                for (let c = 0; c < 9; c++) {
+                    const cell = row.insertCell();
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    const initialValue = initialGrid[r][c];
+                    const playerValue = playerGrid[r][c];
+                    if (initialValue !== null) {
+                        cell.textContent = initialValue;
+                        cell.classList.add('initial-number');
+                    } else if (playerValue !== null) {
+                        cell.textContent = playerValue;
+                        cell.classList.add('player-number');
+                    }
+                }
+            }
+        }
+
+        function adjustBoardSize() {
+            const container = document.getElementById('board-container');
+            if (!container || !sudokuBoard) return;
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const size = Math.min(containerWidth, containerHeight);
+            sudokuBoard.style.width = `${size}px`;
+            sudokuBoard.style.height = `${size}px`;
+            const fontSize = `${size / 20}px`;
+            sudokuBoard.querySelectorAll('td').forEach(cell => cell.style.fontSize = fontSize);
+        }
+
+        function handleCellClick(cell) {
+            if (isPaused) return;
+            audioManager.playSound('click');
+            if (selectedCell === cell) {
+                selectedCell.classList.remove('selected');
+                selectedCell = null;
+                clearHighlights();
+                return;
+            }
+            if (selectedCell) selectedCell.classList.remove('selected');
+            clearHighlights();
+            selectedCell = cell;
+            selectedCell.classList.add('selected');
+            const row = cell.dataset.row;
+            const col = cell.dataset.col;
+            highlightArea(row, col);
+            if (cell.textContent) highlightNumber(cell.textContent);
+        }
+
+        function handleNumberInput(num) {
+            if (!selectedCell || selectedCell.classList.contains('initial-number') || isPaused) return;
+            audioManager.playSound('click');
+            const r = parseInt(selectedCell.dataset.row);
+            const c = parseInt(selectedCell.dataset.col);
+
+            if (num === null) {
+                playerGrid[r][c] = null;
+                selectedCell.textContent = '';
+                selectedCell.classList.remove('incorrect', 'player-number');
+            } else {
+                playerGrid[r][c] = num;
+                selectedCell.textContent = num;
+                selectedCell.classList.add('player-number');
+            }
+            
+            saveData();
+           
+            if (num !== null && num !== solutionGrid[r][c]) {
+                selectedCell.classList.add('incorrect');
+                loseLife();
+            } else {
+                if(num !== null) selectedCell.classList.remove('incorrect');
+                clearHighlights();
+                if (num) highlightNumber(num);
+                highlightArea(r,c);
+                selectedCell.classList.add('selected');
+                checkWin();
+            }
+        }
+       
+        async function handleHint() {
+            audioManager.playSound('click');
+            if(isPaused) return;
+            try {
+                await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' });
+                const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+                if (adData.result) {
+                    const emptyCells = [];
+                    for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(playerGrid[r][c] === null) emptyCells.push({r, c});
+                    if (emptyCells.length > 0) {
+                        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                        handleCellClick(sudokuBoard.rows[randomCell.r].cells[randomCell.c]);
+                        handleNumberInput(solutionGrid[randomCell.r][randomCell.c]);
+                    }
+                }
+            } catch (e) { console.error("Rewarded ad error:", e); }
+        }
+
+        function loseLife() {
+            audioManager.playSound('error');
+            lives--;
+            updateLivesDisplay();
+            if (lives <= 0) {
+                clearInterval(timerInterval);
+                gameOverModal.classList.remove('hidden');
+                clearSavedGame();
+            }
+        }
+
+        async function getExtraLife() {
+            audioManager.playSound('click');
+            try {
+                await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' });
+                const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+                if (adData.result) {
+                    lives++;
+                    updateLivesDisplay();
+                    gameOverModal.classList.add('hidden');
+                    startTimer();
+                }
+            } catch (e) { console.error("Rewarded ad error:", e); }
+        }
+
+        function updateLivesDisplay() {
+            livesDisplay.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('span');
+                heart.innerHTML = i < lives
+                    ? `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>`
+                    : `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="opacity: 0.3;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>`;
+                livesDisplay.appendChild(heart);
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('#sudoku-board td').forEach(c => c.classList.remove('highlight-area', 'highlight-number'));
+        }
+        function highlightArea(row, col) {
+            for (let i = 0; i < 9; i++) {
+                sudokuBoard.rows[row].cells[i].classList.add('highlight-area');
+                sudokuBoard.rows[i].cells[col].classList.add('highlight-area');
+            }
+        }
+        function highlightNumber(num) {
+            document.querySelectorAll('#sudoku-board td').forEach(cell => { if (cell.textContent == num) cell.classList.add('highlight-number') });
+        }
+
+        function checkWin() {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (playerGrid[r][c] !== solutionGrid[r][c]) return false;
+            
+            clearInterval(timerInterval);
+            audioManager.playSound('win');
+            completionTimeDisplay.textContent = `Время: ${timerDisplay.textContent}`;
+            winModal.classList.remove('hidden');
+            updateStatsOnWin();
+            clearSavedGame();
+            vkBridge.send('VKWebAppShowInterstitialAd').catch(e => console.log("Interstitial Ad error", e));
+            return true;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            startTime = Date.now() - elapsedTime * 1000;
+            timerInterval = setInterval(() => {
+                elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+                const seconds = String(elapsedTime % 60).padStart(2, '0');
+                timerDisplay.textContent = `${minutes}:${seconds}`;
+             }, 1000);
+        }
+
+        function togglePause() {
+            audioManager.playSound('click');
+            isPaused = !isPaused;
+            if (isPaused) {
+                clearInterval(timerInterval);
+                pauseModal.classList.remove('hidden');
+            } else {
+                startTimer();
+                pauseModal.classList.add('hidden');
+            }
+        }
+
+        function loadTheme() {
+            const currentTheme = localStorage.getItem('sudokuTheme') || 'light';
+            document.body.dataset.theme = currentTheme;
+        }
+
+        function toggleTheme() {
+            audioManager.playSound('click');
+            const newTheme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
+            document.body.dataset.theme = newTheme;
+            localStorage.setItem('sudokuTheme', newTheme);
+        }
+
+        function updateStatsOnWin() {
+            if (!stats[currentLevel]) stats[currentLevel] = { wins: 0, bestTime: null };
+            const levelStats = stats[currentLevel];
+            levelStats.wins++;
+            if (levelStats.bestTime === null || elapsedTime < levelStats.bestTime) {
+                levelStats.bestTime = elapsedTime;
+            }
+            saveData();
+        }
+
+        function renderStatsTable() {
+            const container = document.getElementById('stats-table-container');
+            container.innerHTML = '';
+            const table = document.createElement('table');
+            table.className = 'stats-table';
+            const headers = ['Сложность', 'Побед', 'Лучшее время'];
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headers.forEach(text => { const th = document.createElement('th'); th.textContent = text; headerRow.appendChild(th); });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            Object.keys(difficultyLevels).forEach(levelKey => {
+                const levelName = difficultyMap[levelKey];
+                const levelStats = stats[levelKey] || { wins: 0, bestTime: null };
+                const tr = document.createElement('tr');
+                const formatTime = (s) => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+                const values = { 'Сложность': levelName, 'Побед': levelStats.wins || '—', 'Лучшее время': formatTime(levelStats.bestTime) };
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = values[header];
+                    td.dataset.label = header + ': ';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
+        }
+
+        function addEventListeners() {
+            const genericClickHandler = (action) => { audioManager.playSound('click'); action(); };
+            
+            difficultyButtonsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.menu-button');
+                if (button && button.dataset.difficulty) {
+                    genericClickHandler(() => startGame(button.dataset.difficulty));
+                }
+            });
+            statsButton.addEventListener('click', () => genericClickHandler(() => { renderStatsTable(); statsModal.classList.remove('hidden'); }));
+            closeStatsBtn.addEventListener('click', () => genericClickHandler(() => statsModal.classList.add('hidden')));
+            themeSwitcher.addEventListener('click', toggleTheme);
+            sudokuBoard.addEventListener('click', (e) => { if (e.target.tagName === 'TD') { handleCellClick(e.target); } });
+
+            numberPad.innerHTML = '';
+            actionPad.innerHTML = '';
+            for(let i=1; i<=9; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'control-button';
+                btn.textContent = i;
+                btn.onclick = () => handleNumberInput(i);
+                numberPad.appendChild(btn);
+            }
+           
+            const hintBtnPad = document.createElement('button');
+            hintBtnPad.className = 'control-button hint-button';
+            hintBtnPad.innerHTML = `💡<span class="ad-badge">Ad</span>`;
+            hintBtnPad.onclick = handleHint;
+           
+            const eraseBtn = document.createElement('button');
+            eraseBtn.className = 'control-button';
+            eraseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.12c.36.53.9.88 1.59.88h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3.7 13.3a.996.996 0 0 1-1.41 0L14 13.41l-2.89 2.89a.996.996 0 1 1-1.41-1.41L12.59 12 9.7 9.11a.996.996 0 1 1 1.41-1.41L14 10.59l2.89-2.89a.996.996 0 1 1 1.41 1.41L15.41 12l2.89 2.89c.38.38.38 1.03 0 1.41z"></path></svg>`;
+            eraseBtn.onclick = () => handleNumberInput(null);
+
+            actionPad.appendChild(hintBtnPad);
+            actionPad.appendChild(eraseBtn);
+           
+            pauseBtn.addEventListener('click', togglePause);
+            resumeButton.addEventListener('click', togglePause);
+            restartButton.addEventListener('click', () => genericClickHandler(() => { pauseModal.classList.add('hidden'); resetGame(); }));
+            mainMenuBtnFromPause.addEventListener('click', () => genericClickHandler(() => { pauseModal.classList.add('hidden'); clearSavedGame(); showMainMenu(); }));
+            extraLifeBtn.addEventListener('click', getExtraLife);
+            restartGameOverBtn.addEventListener('click', () => genericClickHandler(() => { gameOverModal.classList.add('hidden'); resetGame(); }));
+            mainMenuGameOverBtn.addEventListener('click', () => genericClickHandler(() => { gameOverModal.classList.add('hidden'); clearSavedGame(); showMainMenu(); }));
+            newGameWinBtn.addEventListener('click', () => genericClickHandler(() => {
+                winModal.classList.add('hidden');
+                const difficulties = Object.keys(difficultyLevels);
+                startGame(difficulties[Math.floor(Math.random() * difficulties.length)]);
+            }));
+            mainMenuWinBtn.addEventListener('click', () => genericClickHandler(() => { winModal.classList.add('hidden'); showMainMenu(); }));
+            soundToggleBtn.addEventListener('click', () => { audioManager.toggleMute(); audioManager.playSound('click'); });
+            continueGameBtn.addEventListener('click', () => genericClickHandler(() => { continueModal.classList.add('hidden'); continueGame(); }));
+            newGameContinueBtn.addEventListener('click', () => genericClickHandler(() => { continueModal.classList.add('hidden'); clearSavedGame(); showMainMenu(); }));
+
+            window.addEventListener('resize', debounce(adjustBoardSize, 100));
+            document.body.addEventListener('click', async () => { if (!audioManager.isReady) { await Tone.start(); audioManager.init(); audioManager.toggleMute(isMuted); }}, { once: true });
+            
+            vkBridge.subscribe(e => {
+                if (e.detail.type === 'VKWebAppViewHide') { if (!bgMusic.paused) { wasMusicPlaying = true; bgMusic.pause(); }}
+                if (e.detail.type === 'VKWebAppViewRestore') { if (wasMusicPlaying && !isMuted) { bgMusic.play().catch(e => {}); } wasMusicPlaying = false; }
+            });
+        }
+       
+        function createFullGrid() {
+            const grid = Array.from({ length: 9 }, () => Array(9).fill(null));
+            solveSudoku(grid);
+            return grid;
+        }
+        function solveSudoku(grid) {
+            const emptySpot = findEmptySpot(grid);
+            if (!emptySpot) return true;
+            const [row, col] = emptySpot;
+            const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
+            for (let num of nums) {
+                if (isValid(grid, row, col, num)) {
+                    grid[row][col] = num;
+                    if (solveSudoku(grid)) return true;
+                    grid[row][col] = null;
+                }
+            }
+            return false;
+        }
+        function findEmptySpot(grid) {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (grid[r][c] === null) return [r, c];
+            return null;
+        }
+        function isValid(grid, row, col, num) {
+            for (let i = 0; i < 9; i++) if (grid[row][i] === num || grid[i][col] === num) return false;
+            const startRow = row - row % 3, startCol = col - col % 3;
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (grid[i + startRow][j + startCol] === num) return false;
+            return true;
+        }
+        function removeCells(grid, count) {
+            let removed = 0;
+            while (removed < count) {
+                const row = Math.floor(Math.random() * 9);
+                const col = Math.floor(Math.random() * 9);
+                if (grid[row][col] !== null) {
+                    grid[row][col] = null;
+                    removed++;
+                }
+            }
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>
+
