@@ -128,9 +128,9 @@
         }
 
         /* Controls */
-        #controls { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding-top: 10px; width: 100%; flex-shrink: 0; align-items: center; }
+        #controls { display: flex; flex-direction: column; gap: 15px; padding-top: 10px; width: 100%; flex-shrink: 0; }
         #number-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: min(2vw, 8px); }
-        #action-pad { display: flex; gap: min(2vw, 8px); }
+        #action-pad { display: flex; justify-content: center; gap: min(2vw, 8px); }
         .control-button {
             background-color: var(--surface-light); color: var(--text-primary-light);
             font-size: clamp(1.2rem, 4vh, 1.8rem); font-weight: 600;
@@ -142,13 +142,11 @@
             border-radius: 50%;
             aspect-ratio: 1/1;
         }
-        .control-button.action {
-             width: 48px;
-        }
+        .control-button.action { width: 60px; height: 60px; }
         .control-button:active { transform: scale(0.95); background-color: var(--highlight-light); }
-        .control-button svg { width: 24px; height: 24px; }
+        .control-button svg { width: 28px; height: 28px; }
         .ad-badge {
-            position: absolute; top: -1px; right: -1px;
+            position: absolute; top: 2px; right: 2px;
             background-color: var(--primary-light); color: white;
             padding: 1px 5px; border-radius: 6px; font-size: 9px;
             font-weight: 600; line-height: 1; border: 1px solid var(--surface-light);
@@ -231,8 +229,8 @@
                 <table id="sudoku-board"></table>
             </div>
             <div id="controls">
-                 <div id="number-pad"></div>
                  <div id="action-pad"></div>
+                 <div id="number-pad"></div>
             </div>
         </div>
 
@@ -293,7 +291,7 @@
                 try {
                     const now = Tone.now();
                     if (sound === 'click') this.clickSynth.triggerAttackRelease('E5', '8n', now);
-                    if (sound === 'win') ["G4", "B4", "D5", "G5"].forEach((n, i) => this.winSynth.triggerAttackRelease(n, "16n", now + i * 0.1));
+                    if (sound === 'win') ["C5", "E5", "G5", "C6"].forEach((n, i) => this.winSynth.triggerAttackRelease(n, "16n", now + i * 0.1));
                     if (sound === 'error') this.errorSynth.triggerAttackRelease('F#3', '8n', now);
                 } catch(e) { console.error("Sound play error", e); }
             },
@@ -301,11 +299,16 @@
                 isMuted = (typeof forceState === 'boolean') ? forceState : !isMuted;
                 if (document.getElementById('sound-toggle')) document.getElementById('sound-toggle').checked = !isMuted;
                 Tone.Master.mute = isMuted;
-                if (isMuted || (!mainMenu.classList.contains('active') && !gameScreen.classList.contains('active'))) {
+                
+                if (isMuted) {
                     bgMusic.pause();
                 } else {
-                    bgMusic.play().catch(e => {});
+                    const isAnyScreenActive = mainMenu.classList.contains('active') || gameScreen.classList.contains('active');
+                    if (isAnyScreenActive) {
+                         bgMusic.play().catch(e => {});
+                    }
                 }
+                
                 if(typeof forceState === 'undefined') saveData();
             }
         };
@@ -319,13 +322,16 @@
             modalContainer.classList.remove('hidden');
             
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) hideModal(id);
+                if (e.target.closest('.modal-content')) return;
+                if(id !== 'continue-modal') hideModal(id);
             });
         }
 
         function hideModal(id) {
             const modal = document.getElementById(id);
-            if (modal) modal.remove();
+            if (modal) {
+                modal.remove();
+            }
             if (modalContainer.children.length === 0) {
                  modalContainer.classList.add('hidden');
             }
@@ -339,6 +345,7 @@
             
             await loadData();
             updateThemeUI(currentTheme);
+            audioManager.toggleMute(isMuted);
             addEventListeners();
             
             if (savedGameState) {
@@ -354,14 +361,14 @@
             const gameStateToSave = hasProgress ? { playerGrid, initialGrid, solutionGrid, currentLevel, lives, elapsedTime } : null;
             const dataToSave = JSON.stringify({ stats, isMuted, currentTheme, savedGame: gameStateToSave });
             try {
-                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_v3_${vkUserId}`, value: dataToSave });
-            } catch (e) { localStorage.setItem(`sudoku_masters_data_v3_${vkUserId}`, dataToSave); }
+                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_v4_${vkUserId}`, value: dataToSave });
+            } catch (e) { localStorage.setItem(`sudoku_masters_data_v4_${vkUserId}`, dataToSave); }
         }
 
         async function loadData() {
             if (!vkUserId) return;
             let loadedData = null;
-            const key = `sudoku_masters_data_v3_${vkUserId}`;
+            const key = `sudoku_masters_data_v4_${vkUserId}`;
             try {
                 const response = await vkBridge.send('VKWebAppStorageGet', { keys: [key] });
                 if (response.keys[0]?.value) loadedData = JSON.parse(response.keys[0].value);
@@ -442,9 +449,9 @@
         function generateSudoku() { solutionGrid = createFullGrid(); initialGrid = JSON.parse(JSON.stringify(solutionGrid)); removeCells(initialGrid, difficultyLevels[currentLevel]); playerGrid = JSON.parse(JSON.stringify(initialGrid)); }
         function drawBoard() { sudokuBoard.innerHTML = ''; for (let r = 0; r < 9; r++) { const row = sudokuBoard.insertRow(); for (let c = 0; c < 9; c++) { const cell = row.insertCell(); cell.dataset.row = r; cell.dataset.col = c; const initialValue = initialGrid[r][c]; const playerValue = playerGrid[r][c]; if (initialValue !== null) { cell.textContent = initialValue; cell.classList.add('initial-number'); } else if (playerValue !== null) { cell.textContent = playerValue; cell.classList.add('player-number'); } } } }
         function adjustBoardSize() { const container = document.getElementById('board-wrapper'); if (!container || !sudokuBoard) return; const size = Math.min(container.clientWidth, container.clientHeight); sudokuBoard.style.width = `${size}px`; sudokuBoard.style.height = `${size}px`; sudokuBoard.style.fontSize = `${size / 18}px`; }
-        function handleCellClick(cell) { if (isPaused) return; audioManager.playSound('click'); if (selectedCell === cell) { cell.classList.remove('selected'); selectedCell = null; clearHighlights(); return; } if (selectedCell) selectedCell.classList.remove('selected'); clearHighlights(); selectedCell = cell; cell.classList.add('selected'); const row = cell.dataset.row, col = cell.dataset.col; highlightArea(row, col); if (cell.textContent) highlightNumber(cell.textContent); }
+        function handleCellClick(e) { const cell = e.target.closest('td'); if (!cell || isPaused) return; audioManager.playSound('click'); if (selectedCell === cell) { cell.classList.remove('selected'); selectedCell = null; clearHighlights(); return; } if (selectedCell) selectedCell.classList.remove('selected'); clearHighlights(); selectedCell = cell; cell.classList.add('selected'); const row = cell.dataset.row, col = cell.dataset.col; highlightArea(row, col); if (cell.textContent) highlightNumber(cell.textContent); }
         function handleNumberInput(num) { if (!selectedCell || selectedCell.classList.contains('initial-number') || isPaused) return; audioManager.playSound('click'); const r = parseInt(selectedCell.dataset.row), c = parseInt(selectedCell.dataset.col); if (num === null) { playerGrid[r][c] = null; selectedCell.textContent = ''; selectedCell.classList.remove('incorrect', 'player-number'); } else { playerGrid[r][c] = num; selectedCell.textContent = num; selectedCell.classList.add('player-number'); } saveData(); if (num !== null && num !== solutionGrid[r][c]) { selectedCell.classList.add('incorrect'); loseLife(); } else { if(num !== null) selectedCell.classList.remove('incorrect'); clearHighlights(); highlightArea(r,c); if (num) highlightNumber(num); selectedCell.classList.add('selected'); checkWin(); } }
-        async function handleHint() { audioManager.playSound('click'); if(isPaused) return; try { await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }); const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }); if (adData.result) { const emptyCells = []; for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(playerGrid[r][c] === null) emptyCells.push({r, c}); if (emptyCells.length > 0) { const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)]; handleCellClick(sudokuBoard.rows[randomCell.r].cells[randomCell.c]); handleNumberInput(solutionGrid[randomCell.r][randomCell.c]); } } } catch (e) { console.error("Rewarded ad error:", e); } }
+        async function handleHint() { audioManager.playSound('click'); if(isPaused) return; try { await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }); const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }); if (adData.result) { const emptyCells = []; for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(playerGrid[r][c] === null) emptyCells.push({r, c}); if (emptyCells.length > 0) { const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)]; handleCellClick({ target: sudokuBoard.rows[randomCell.r].cells[randomCell.c] }); handleNumberInput(solutionGrid[randomCell.r][randomCell.c]); } } } catch (e) { console.error("Rewarded ad error:", e); } }
         function loseLife() { audioManager.playSound('error'); lives--; updateLivesDisplay(); if (lives <= 0) { clearInterval(timerInterval); showGameOverModal(); clearSavedGame(); } }
         async function getExtraLife() { audioManager.playSound('click'); try { await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }); const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }); if (adData.result) { lives++; updateLivesDisplay(); hideModal('game-over-modal'); startTimer(); } } catch (e) { console.error("Rewarded ad error:", e); } }
         function updateLivesDisplay() { livesDisplay.innerHTML = ''; for (let i = 0; i < 3; i++) { const heart = document.createElement('span'); heart.innerHTML = i < lives ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`; livesDisplay.appendChild(heart); } }
@@ -462,7 +469,7 @@
         function removeCells(grid, count) { let removed = 0; while (removed < count) { const row = Math.floor(Math.random() * 9), col = Math.floor(Math.random() * 9); if (grid[row][col] !== null) { grid[row][col] = null; removed++; } } }
 
         function addEventListeners() {
-            const click = (el, fn) => { if(el) el.addEventListener('click', () => { audioManager.playSound('click'); fn(); }); };
+            const click = (el, fn) => { if(el) el.addEventListener('click', () => { fn(); }); };
             
             difficultyButtonsContainer.addEventListener('click', (e) => {
                 const button = e.target.closest('.menu-button');
@@ -472,9 +479,11 @@
                 }
             });
 
-            click(mainMenuStatsBtn, showStatsModal);
-            click(mainMenuSettingsBtn, showSettingsModal);
+            click(mainMenuStatsBtn, () => { audioManager.playSound('click'); showStatsModal(); });
+            click(mainMenuSettingsBtn, () => { audioManager.playSound('click'); showSettingsModal(); });
             click(pauseBtn, togglePause);
+            sudokuBoard.addEventListener('click', handleCellClick);
+
 
             numberPad.innerHTML = '';
             for(let i=1; i<=9; i++) {
@@ -485,7 +494,7 @@
                 numberPad.appendChild(btn);
             }
            
-            actionPad.innerHTML = `<button id="erase-btn" class="control-button action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(90deg);"><path d="M21.5 7.5l-15 15-5-5 15-15 5 5z"></path><path d="M10.5 5.5L18 13"></path></svg></button><button id="hint-btn" class="control-button action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v-1.17a3 3 0 00-3-3H8"/><path d="M12 7.5A2.5 2.5 0 0114.5 5v0A2.5 2.5 0 0117 7.5v0"/><path d="M12 21a9 9 0 000-18 9 9 0 000 18z"/><path d="M12 17v.01"/></svg><span class="ad-badge">Ad</span></button>`;
+            actionPad.innerHTML = `<button id="erase-btn" class="control-button action"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg></button><button id="hint-btn" class="control-button action"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.09 16.05A6.47 6.47 0 0 1 12 18a6.5 6.5 0 0 1-5.9-8.83.5.5 0 0 1 .2-.66l.3-.23a.5.5 0 0 1 .66.22 4.5 4.5 0 0 0 8.48 0 .5.5 0 0 1 .66-.22l.3.23a.5.5 0 0 1 .2.66A6.47 6.47 0 0 1 15.09 16.05z"></path><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="M8.5 14.5h7"></path></svg><span class="ad-badge">Ad</span></button>`;
             click(document.getElementById('hint-btn'), handleHint);
             click(document.getElementById('erase-btn'), () => handleNumberInput(null));
 
@@ -498,36 +507,36 @@
             });
         }
         
-        const genericModalActions = (modalId) => { audioManager.playSound('click'); hideModal(modalId); };
-        
         const showContinueModal = () => { showModal('continue-modal', `<h2>Сохраненная игра</h2><p>У вас есть незаконченная игра. Хотите продолжить?</p><div class="modal-buttons"><button id="continue-game-btn" class="menu-button primary">Продолжить</button><button id="new-game-continue-btn" class="menu-button">Начать заново</button></div>`); };
         const showPauseModal = () => { showModal('pause-modal', `<h2>Пауза</h2><div class="modal-buttons"><button id="resume-button" class="menu-button primary">Продолжить</button><button id="restart-button" class="menu-button">Начать заново</button><button id="settings-btn-pause" class="menu-button">Настройки</button><button id="main-menu-btn-pause" class="menu-button">Главное меню</button></div>`); };
         const showGameOverModal = () => { showModal('game-over-modal', `<h2>Вы проиграли</h2><div class="modal-buttons"><button id="extra-life-btn" class="menu-button primary">Доп. жизнь (Ad)</button><button id="restart-game-over-btn" class="menu-button">Начать заново</button><button id="main-menu-game-over-btn" class="menu-button">Главное меню</button></div>`); };
         const showWinModal = () => { showModal('win-modal', `<h2>Поздравляем!</h2><p id="completion-time">Время: ${timerDisplay.textContent}</p><div class="modal-buttons"><button id="new-game-win-btn" class="menu-button primary">Новая игра</button><button id="main-menu-win-btn" class="menu-button">Главное меню</button></div>`); };
-        const showStatsModal = () => { showModal('stats-modal', `<h3>Статистика</h3><div id="stats-table-container"></div><div class="modal-buttons"><button id="close-stats-btn" class="menu-button primary">Закрыть</button></div>`); const container = document.getElementById('stats-table-container'); container.innerHTML = ''; const table = document.createElement('table'); table.className = 'stats-table'; const headers = ['Сложность', 'Побед', 'Лучшее время']; const thead = document.createElement('thead'); const headerRow = document.createElement('tr'); headers.forEach(text => { const th = document.createElement('th'); th.textContent = text; headerRow.appendChild(th); }); thead.appendChild(headerRow); table.appendChild(thead); const tbody = document.createElement('tbody'); Object.keys(difficultyLevels).forEach(levelKey => { const levelName = difficultyMap[levelKey]; const levelStats = stats[levelKey] || { wins: 0, bestTime: null }; const tr = document.createElement('tr'); const formatTime = (s) => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; const values = { 'Сложность': levelName, 'Побед': levelStats.wins || '—', 'Лучшее время': formatTime(levelStats.bestTime) }; headers.forEach(header => { const td = document.createElement('td'); td.textContent = values[header]; tr.appendChild(td); }); tbody.appendChild(tr); }); table.appendChild(tbody); container.appendChild(table); };
+        const showStatsModal = () => { showModal('stats-modal', `<h3>Статистика</h3><div id="stats-table-container"></div><div class="modal-buttons"><button id="close-stats-btn" class="menu-button primary">Закрыть</button></div>`); const container = document.getElementById('stats-table-container'); container.innerHTML = ''; const table = document.createElement('table'); table.className = 'stats-table'; const headers = ['Сложность', 'Побед', 'Лучшее время']; const thead = document.createElement('thead'); const headerRow = document.createElement('tr'); headers.forEach(text => { const th = document.createElement('th'); th.textContent = text; headerRow.appendChild(th); }); thead.appendChild(headerRow); table.appendChild(tbody); const tbody = document.createElement('tbody'); Object.keys(difficultyLevels).forEach(levelKey => { const levelName = difficultyMap[levelKey]; const levelStats = stats[levelKey] || { wins: 0, bestTime: null }; const tr = document.createElement('tr'); const formatTime = (s) => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; const values = { 'Сложность': levelName, 'Побед': levelStats.wins || '—', 'Лучшее время': formatTime(levelStats.bestTime) }; headers.forEach(header => { const td = document.createElement('td'); td.textContent = values[header]; tr.appendChild(td); }); tbody.appendChild(tr); }); table.appendChild(tbody); container.appendChild(table); };
         const showSettingsModal = () => { showModal('settings-modal', `<h2>Настройки</h2><div class="settings-content"><div class="setting-row"><label for="sound-toggle">Звуки</label><label class="switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label></div><div class="setting-row"><label for="theme-toggle">Темная тема</label><label class="switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label></div></div><div class="modal-buttons"><button id="close-settings-btn" class="menu-button primary">Закрыть</button></div>`); document.getElementById('sound-toggle').checked = !isMuted; document.getElementById('theme-toggle').checked = currentTheme === 'dark'; document.getElementById('sound-toggle').onchange = (e) => audioManager.toggleMute(!e.target.checked); document.getElementById('theme-toggle').onchange = (e) => updateThemeUI(e.target.checked ? 'dark' : 'light'); };
 
         modalContainer.addEventListener('click', e => {
-            const id = e.target.id;
-            const modalId = e.target.closest('.modal-overlay')?.id;
-            if (!modalId && e.target.closest('.modal-content')) return;
+            const target = e.target.closest('button');
+            if (!target) return;
             
-            const action = () => audioManager.playSound('click');
+            const id = target.id;
+            const modalId = target.closest('.modal-overlay')?.id;
+
+            const action = (fn) => { audioManager.playSound('click'); if(fn) fn(); };
             
             switch(id) {
-                case 'continue-game-btn':       action(); hideModal(modalId); continueGame(); break;
-                case 'new-game-continue-btn':   action(); hideModal(modalId); clearSavedGame(); showMainMenu(); break;
-                case 'resume-button':           action(); togglePause(); break;
-                case 'restart-button':          action(); hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); break;
-                case 'settings-btn-pause':      action(); showSettingsModal(); break;
-                case 'main-menu-btn-pause':     action(); hideModal(modalId); clearSavedGame(); showMainMenu(); break;
+                case 'continue-game-btn':       action(() => { hideModal(modalId); continueGame(); }); break;
+                case 'new-game-continue-btn':   action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
+                case 'resume-button':           action(togglePause); break;
+                case 'restart-button':          action(() => { hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); }); break;
+                case 'settings-btn-pause':      action(showSettingsModal); break;
+                case 'main-menu-btn-pause':     action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
                 case 'extra-life-btn':          getExtraLife(); break;
-                case 'restart-game-over-btn':   action(); hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); break;
-                case 'main-menu-game-over-btn': action(); hideModal(modalId); clearSavedGame(); showMainMenu(); break;
-                case 'new-game-win-btn':        action(); hideModal(modalId); startGame(Object.keys(difficultyLevels)[Math.floor(Math.random() * 4)]); break;
-                case 'main-menu-win-btn':       action(); hideModal(modalId); showMainMenu(); break;
-                case 'close-stats-btn':         action(); hideModal(modalId); break;
-                case 'close-settings-btn':      action(); hideModal(modalId); break;
+                case 'restart-game-over-btn':   action(() => { hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); }); break;
+                case 'main-menu-game-over-btn': action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
+                case 'new-game-win-btn':        action(() => { hideModal(modalId); startGame(Object.keys(difficultyLevels)[Math.floor(Math.random() * 4)]); }); break;
+                case 'main-menu-win-btn':       action(() => { hideModal(modalId); showMainMenu(); }); break;
+                case 'close-stats-btn':         action(() => hideModal(modalId)); break;
+                case 'close-settings-btn':      action(() => hideModal(modalId)); break;
             }
         });
 
