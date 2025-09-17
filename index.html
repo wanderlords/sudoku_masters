@@ -3,57 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
-    <title>Судоку</title>
+    <title>Судоку Мастерс</title>
     <!-- VK Bridge -->
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <!-- Tone.js for Audio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --font-family: 'Nunito', sans-serif;
-            --bg-color: #f0f2f5;
-            --text-color: #1c1e21;
-            --text-color-secondary: #606770;
-            --primary-color: #1877f2;
-            --accent-color: #fa383e;
-            --border-color: #dddfe2;
-            --cell-bg: #ffffff;
-            --cell-highlight-area-bg: #0000000e;
-            --cell-highlight-number-bg: #008cff2c;
-            --cell-selected-bg: #008cff94;
-            --cell-error-color: #fa383e;
-            --cell-initial-color: #1c1e21;
-            --cell-player-color: #1877f2;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --modal-bg: rgba(240, 242, 245, 0.8);
+            --font-family: 'Poppins', sans-serif;
+            
+            /* New Light Theme Palette */
+            --bg-light: #F8FAFC;
+            --surface-light: #FFFFFF;
+            --primary-light: #14B8A6; /* Teal */
+            --primary-light-transparent: #14b8a61a;
+            --text-primary-light: #0F172A;
+            --text-secondary-light: #64748B;
+            --border-light: #E2E8F0;
+            --error-light: #F43F5E; /* Rose */
+            --highlight-light: #F1F5F9;
+
+            /* New Dark Theme Palette */
+            --bg-dark: #0F172A; /* Slate */
+            --surface-dark: #1E293B;
+            --primary-dark: #2DD4BF;
+            --primary-dark-transparent: #2dd4bf1a;
+            --text-primary-dark: #F1F5F9;
+            --text-secondary-dark: #94A3B8;
+            --border-dark: #334155;
+            --error-dark: #FB7185;
+            --highlight-dark: #334155;
         }
 
         [data-theme="dark"] {
-            --bg-color: #18191a;
-            --text-color: #e4e6eb;
-            --text-color-secondary: #b0b3b8;
-            --primary-color: #2d88ff;
-            --border-color: #3a3a3c;
-            --cell-bg: #242526;
-            --cell-highlight-area-bg: #ffffff14;
-            --cell-highlight-number-bg: #4599ff3a;
-            --cell-selected-bg: #4599ff96;
-            --cell-initial-color: #e4e6eb;
-            --cell-player-color: #4599ff;
-            --shadow-color: rgba(0, 0, 0, 0.3);
-            --modal-bg: rgba(24, 25, 26, 0.8);
+            --bg-light: var(--bg-dark);
+            --surface-light: var(--surface-dark);
+            --primary-light: var(--primary-dark);
+            --primary-light-transparent: var(--primary-dark-transparent);
+            --text-primary-light: var(--text-primary-dark);
+            --text-secondary-light: var(--text-secondary-dark);
+            --border-light: var(--border-dark);
+            --error-light: var(--error-dark);
+            --highlight-light: var(--highlight-dark);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overscroll-behavior-y: contain; }
-        body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
+        body { font-family: var(--font-family); background-color: var(--bg-light); color: var(--text-primary-light); display: flex; justify-content: center; align-items: center; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
        
-        #app { width: 100%; height: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; padding-top: env(safe-area-inset-top, 10px); padding-bottom: env(safe-area-inset-bottom, 10px); user-select: none; -webkit-user-select: none; }
+        #app { width: 100%; height: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; padding-top: env(safe-area-inset-top, 15px); padding-bottom: env(safe-area-inset-bottom, 15px); user-select: none; -webkit-user-select: none; }
         .hidden { display: none !important; }
 
+        /* Main Menu Redesign */
         #main-menu {
             display: flex;
             flex-direction: column;
@@ -61,163 +65,183 @@
             align-items: center;
             width: 100%;
             height: 100%;
-            gap: clamp(1rem, 4vh, 2rem);
+            gap: 20px;
         }
-        .title-container { text-align: center; }
-        .title-container h1 { font-size: clamp(2.5rem, 12vw, 4rem); font-weight: 800; color: var(--primary-color); }
-        .title-container p { font-size: clamp(1rem, 4vw, 1.5rem); font-weight: 700; color: var(--text-color-secondary); margin-top: -10px; }
-        .difficulty-buttons { display: flex; flex-direction: column; gap: clamp(10px, 2vh, 15px); width: 100%; max-width: 320px; }
+        .title-container { text-align: center; margin-bottom: 20px;}
+        .title-container h1 { 
+            font-size: clamp(3rem, 12vw, 4.5rem); 
+            font-weight: 700; 
+            color: var(--primary-light);
+            letter-spacing: -2px;
+        }
+        .difficulty-buttons { 
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%; max-width: 350px; 
+        }
         .menu-button {
-            background-color: var(--cell-bg);
-            color: var(--text-color);
-            font-size: clamp(1rem, 2.5vh, 1.2rem);
-            font-weight: 700;
-            border: 1px solid var(--border-color);
-            padding: clamp(12px, 2.2vh, 18px) 20px;
+            background-color: var(--surface-light);
+            color: var(--text-primary-light);
+            font-size: clamp(1rem, 2.5vh, 1.1rem);
+            font-weight: 600;
+            border: 1px solid var(--border-light);
+            padding: clamp(14px, 2.5vh, 20px) 20px;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 4px var(--shadow-color);
         }
-        .menu-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow-color); }
-        .stats-button { background-color: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+        .menu-button:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        #stats-button {
+            grid-column: 1 / -1;
+            background-color: var(--primary-light);
+            color: #fff;
+            border-color: var(--primary-light);
+        }
        
-        #menu-footer { display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        .theme-switcher { display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-color-secondary); }
-        .theme-switcher svg { width: 24px; height: 24px; stroke: var(--text-color); }
-        .theme-toggle { width: 44px; height: 24px; background-color: var(--border-color); border-radius: 12px; position: relative; transition: background-color 0.3s; }
-        .theme-toggle::before { content: ''; position: absolute; width: 18px; height: 18px; background-color: var(--cell-bg); border-radius: 50%; top: 3px; left: 3px; transition: transform 0.3s ease; }
-        [data-theme="dark"] .theme-toggle { background-color: var(--primary-color); }
-        [data-theme="dark"] .theme-toggle::before { transform: translateX(20px); }
-
+        #menu-footer { 
+            position: absolute;
+            bottom: env(safe-area-inset-bottom, 20px);
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .theme-switcher { 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--surface-light);
+            border: 1px solid var(--border-light);
+            padding: 8px;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+        .theme-switcher svg { width: 24px; height: 24px; color: var(--text-secondary-light); }
+        .theme-switcher .icon-active { color: var(--primary-light); }
+        
+        /* Game Screen Redesign */
         #game-screen {
             width: 100%;
             height: 100%;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            gap: 5px;
+            display: flex;
+            flex-direction: column;
         }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 5px; width: 100%; }
-        .icon-button { background: none; border: none; cursor: pointer; width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; color: var(--text-color-secondary); }
-        .icon-button svg { width: 28px; height: 28px; }
-        #game-info { text-align: center; }
-        #difficulty-display { font-weight: 700; font-size: 1.1rem; }
-        #timer { font-size: 1rem; color: var(--text-color-secondary); }
-        #lives { display: flex; gap: 4px; color: var(--accent-color); }
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 5px 0;
+            width: 100%; 
+            flex-shrink: 0;
+        }
+        .header-block { display: flex; align-items: center; flex: 1; }
+        .header-block.left { justify-content: flex-start; }
+        .header-block.center { justify-content: center; flex-direction: column; }
+        .header-block.right { justify-content: flex-end; }
+
+        .icon-button { background: none; border: none; cursor: pointer; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; color: var(--text-secondary-light); }
+        .icon-button svg { width: 26px; height: 26px; }
+
+        #difficulty-display { font-weight: 600; font-size: 1.1rem; }
+        #timer { font-size: 1rem; color: var(--text-secondary-light); }
+        #lives { display: flex; gap: 4px; color: var(--error-light); }
        
         #board-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
             width: 100%;
+            flex-grow: 1;
             min-height: 0;
+            padding: 10px 0;
         }
        
         #sudoku-board {
             border-collapse: collapse;
-            border: 3px solid var(--text-color);
+            border: 2px solid var(--text-primary-light);
             aspect-ratio: 1 / 1;
             margin: auto;
+            border-radius: 8px;
+            overflow: hidden;
         }
         #sudoku-board td {
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border-light);
             text-align: center;
-            font-weight: 700;
+            font-weight: 500;
             cursor: pointer;
             transition: background-color 0.2s;
             width: 11.111%;
             height: 11.111%;
+            position: relative;
         }
        
-        #sudoku-board td:nth-child(3n) { border-right: 2px solid var(--text-color); }
-        #sudoku-board tr:nth-child(3n) { border-bottom: 2px solid var(--text-color); }
-        #sudoku-board td:first-child { border-left: 2px solid var(--text-color); }
-        #sudoku-board tr:first-child td { border-top: 2px solid var(--text-color); }
+        #sudoku-board td:nth-child(3n) { border-right: 2px solid var(--text-secondary-light); }
+        #sudoku-board tr:nth-child(3n) { border-bottom: 2px solid var(--text-secondary-light); }
+        #sudoku-board td:last-child { border-right: none; }
+        #sudoku-board tr:last-child td { border-bottom: none; }
 
-        .initial-number { color: var(--cell-initial-color); font-weight: 800; }
-        .player-number { color: var(--cell-player-color); }
-        .incorrect { color: var(--cell-error-color) !important; animation: shake 0.3s; }
-        .highlight-area { background-color: var(--cell-highlight-area-bg); }
-        .highlight-number { background-color: var(--cell-highlight-number-bg) !important; }
-        .selected { background-color: var(--cell-selected-bg) !important; }
+        .initial-number { color: var(--text-primary-light); font-weight: 700; }
+        .player-number { color: var(--primary-light); font-weight: 600; }
+        .incorrect { color: var(--error-light) !important; animation: shake 0.3s; }
+        .highlight-area { background-color: var(--highlight-light) !important; }
+        .highlight-number { background-color: var(--primary-light-transparent) !important; }
+        .selected::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 3px solid var(--primary-light);
+            border-radius: 4px;
+        }
 
-        #controls { display: flex; flex-direction: column; gap: clamp(5px, 1.5vh, 10px); padding: 10px; width: 100%; }
-        #number-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: min(2vw, 8px); }
-        #action-pad { display: flex; justify-content: space-between; gap: min(2vw, 8px); }
+        /* Controls Redesign */
+        #controls { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; width: 100%; flex-shrink: 0; }
+        #number-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; }
+        #action-pad { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
         .control-button {
-            background-color: var(--cell-bg);
-            color: var(--text-color);
-            font-size: clamp(1rem, 4vh, 1.5rem);
-            font-weight: 700;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            background-color: var(--surface-light);
+            color: var(--text-primary-light);
+            font-size: clamp(1.2rem, 4vh, 1.8rem);
+            font-weight: 600;
+            border: 1px solid var(--border-light);
+            border-radius: 50%;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: clamp(40px, 12vw, 60px);
+            aspect-ratio: 1 / 1;
         }
-        #number-pad .control-button { aspect-ratio: 1 / 1.2; height: auto; }
-        #action-pad .control-button { flex: 1; position: relative; }
+        .control-button:active { transform: scale(0.95); background-color: var(--highlight-light); }
+        #action-pad .control-button { border-radius: 12px; aspect-ratio: auto; height: 50px; }
        
-        #action-pad .control-button svg { width: clamp(20px, 6vw, 28px); height: clamp(20px, 6vw, 28px); }
-        .control-button:active { transform: scale(0.95); background-color: var(--border-color); }
-       
+        #action-pad .control-button svg { width: clamp(22px, 6vw, 28px); height: clamp(22px, 6vw, 28px); }
         .ad-badge {
             position: absolute;
-            top: 2px; right: 2px;
-            background-color: var(--primary-color);
+            top: -2px; right: -2px;
+            background-color: var(--primary-light);
             color: white;
             padding: 1px 4px;
-            border-radius: 4px;
-            font-size: 9px;
-            font-weight: 800;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
             line-height: 1;
+            border: 2px solid var(--surface-light);
         }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--modal-bg); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; animation: fadeIn 0.3s ease; }
-        .modal-content { background-color: var(--cell-bg); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); text-align: center; width: 100%; max-width: 400px; max-height: 90vh; display: flex; flex-direction: column; }
-        .modal-body { flex-grow: 1; overflow-y: auto; text-align: left; padding-right: 10px; margin-right: -10px; }
-        .modal-content h2 { font-size: 2rem; margin-bottom: 15px; }
-        .modal-content h3 { font-size: 1.5rem; margin-bottom: 20px; }
-        .modal-content p { margin-bottom: 25px; font-size: 1.1rem; color: var(--text-color-secondary); }
-        .modal-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; flex-shrink: 0; }
-        .modal-button { font-size: 1.1rem; padding: 15px; }
-        .primary { background-color: var(--primary-color); color: #fff; border: none; }
-       
-        #stats-table-container { width: 100%; }
-        .stats-table { width: 100%; border-collapse: collapse; }
-        .stats-table th, .stats-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid var(--border-color); }
-        .stats-table th { font-size: 0.9rem; font-weight: 700; color: var(--text-color-secondary); }
-        .stats-table td:first-child { font-weight: 700; text-align: left; }
-        .stats-table tbody tr:last-child td { border-bottom: none; }
-       
-        @media screen and (max-width: 480px) {
-            .stats-table { font-size: clamp(0.8rem, 3vw, 1rem); }
-            .stats-table th, .stats-table td { padding: 8px 10px; }
-            .stats-table thead { display: none; }
-            .stats-table tr { display: block; border: 1px solid var(--border-color); margin-bottom: 1em; border-radius: 8px; }
-            .stats-table td {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border: none;
-                border-bottom: 1px solid var(--bg-color);
-                text-align: right;
-                padding: 10px 15px;
-            }
-            .stats-table td:last-child { border-bottom: 0; }
-            .stats-table td:before {
-                content: attr(data-label);
-                font-weight: bold;
-                color: var(--text-color-secondary);
-                text-align: left;
-                margin-right: 10px;
-            }
+        /* Modal Redesign */
+        .modal-overlay { backdrop-filter: blur(8px); }
+        .modal-content { 
+            background-color: var(--surface-light); 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            border: 1px solid var(--border-light);
         }
-
+        .modal-content h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; }
+        .modal-content p { margin-bottom: 20px; font-size: 1rem; color: var(--text-secondary-light); }
+        .primary { background-color: var(--primary-light); color: #fff; border: none; }
+       
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
     </style>
@@ -227,8 +251,7 @@
     <div id="app">
         <div id="main-menu">
             <div class="title-container">
-                <h1>Судоку</h1>
-                <p>мастерс</p>
+                <h1>Судоку Мастерс</h1>
             </div>
             <div class="difficulty-buttons">
                 <button class="menu-button" data-difficulty="easy">Легкий</button>
@@ -236,13 +259,12 @@
                 <button class="menu-button" data-difficulty="hard">Сложный</button>
                 <button class="menu-button" data-difficulty="expert">Эксперт</button>
                 <button class="menu-button" data-difficulty="extreme">Экстремальный</button>
-                <button id="stats-button" class="menu-button stats-button">Статистика</button>
+                <button id="stats-button" class="menu-button">Статистика</button>
             </div>
             <div id="menu-footer">
                 <div class="theme-switcher">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                    <div class="theme-toggle"></div>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </div>
             </div>
         </div>
@@ -250,27 +272,29 @@
 
         <div id="game-screen" class="hidden">
             <header>
-                 <div style="display: flex; align-items: center;">
+                 <div class="header-block left">
                     <button id="pause-btn" class="icon-button">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="18"></line></svg>
                     </button>
                     <button id="sound-toggle-btn" class="icon-button">
                         <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
                         <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
                     </button>
                  </div>
-                <div id="game-info">
+                <div class="header-block center">
                     <div id="difficulty-display"></div>
                     <div id="timer">00:00</div>
                 </div>
-                <div id="lives"></div>
+                <div class="header-block right">
+                    <div id="lives"></div>
+                </div>
              </header>
             <div id="board-container">
                 <table id="sudoku-board"></table>
             </div>
             <div id="controls">
-                <div id="number-pad"></div>
                 <div id="action-pad"></div>
+                <div id="number-pad"></div>
             </div>
         </div>
 
@@ -367,6 +391,9 @@
         // Audio
         const bgMusic = document.getElementById('bg-music');
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
+        // Theme
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
         
         let vkUserId = null;
         let wasMusicPlaying = false;
@@ -416,7 +443,7 @@
                 if (isMuted) {
                     bgMusic.pause();
                 } else {
-                    if (!mainMenu.classList.contains('hidden') || !gameScreen.classList.contains('hidden')) {
+                    if (mainMenu.classList.contains('active') || gameScreen.classList.contains('active')) {
                          bgMusic.play().catch(e => {});
                     }
                 }
@@ -433,7 +460,7 @@
                 vkUserId = 'test_user';
             }
             await loadData();
-            loadTheme();
+            updateThemeUI(localStorage.getItem('sudokuTheme') || 'light');
             addEventListeners();
             if (savedGameState) {
                 continueModal.classList.remove('hidden');
@@ -444,14 +471,14 @@
 
         async function saveData() {
             if (!vkUserId) return;
-            const hasProgress = playerGrid.length > 0 && playerGrid.some(row => row.some(cell => cell !== null));
+            const hasProgress = playerGrid.length > 0 && playerGrid.flat().some(cell => cell !== null);
             const gameStateToSave = hasProgress ? { playerGrid, initialGrid, solutionGrid, currentLevel, lives, elapsedTime } : null;
             const dataToSave = JSON.stringify({ stats, isMuted, savedGame: gameStateToSave });
             try {
-                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_data_${vkUserId}`, value: dataToSave });
+                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_${vkUserId}`, value: dataToSave });
             } catch (e) {
                 console.error("VK save error:", e);
-                localStorage.setItem(`sudoku_data_${vkUserId}`, dataToSave);
+                localStorage.setItem(`sudoku_masters_data_${vkUserId}`, dataToSave);
             }
         }
 
@@ -460,9 +487,9 @@
             const dataToSave = JSON.stringify({ stats, isMuted, savedGame: null });
              if (!vkUserId) return;
              try {
-                vkBridge.send('VKWebAppStorageSet', { key: `sudoku_data_${vkUserId}`, value: dataToSave });
+                vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_${vkUserId}`, value: dataToSave });
             } catch (e) {
-                localStorage.setItem(`sudoku_data_${vkUserId}`, dataToSave);
+                localStorage.setItem(`sudoku_masters_data_${vkUserId}`, dataToSave);
             }
         }
        
@@ -470,13 +497,13 @@
             if (!vkUserId) return;
             let loadedData = null;
             try {
-                const response = await vkBridge.send('VKWebAppStorageGet', { keys: [`sudoku_data_${vkUserId}`] });
+                const response = await vkBridge.send('VKWebAppStorageGet', { keys: [`sudoku_masters_data_${vkUserId}`] });
                 if (response.keys[0]?.value) {
                     loadedData = JSON.parse(response.keys[0].value);
                 }
             } catch (e) {
                 console.error("VK load error:", e);
-                const localData = localStorage.getItem(`sudoku_data_${vkUserId}`);
+                const localData = localStorage.getItem(`sudoku_masters_data_${vkUserId}`);
                 if (localData) loadedData = JSON.parse(localData);
             }
             if (loadedData) {
@@ -488,7 +515,9 @@
 
         function showMainMenu() {
             mainMenu.classList.remove('hidden');
+            mainMenu.classList.add('active');
             gameScreen.classList.add('hidden');
+            gameScreen.classList.remove('active');
             if(!isMuted) bgMusic.play().catch(e=>{});
             vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
         }
@@ -497,7 +526,9 @@
             currentLevel = level;
             difficultyDisplay.textContent = difficultyMap[level];
             mainMenu.classList.add('hidden');
+            mainMenu.classList.remove('active');
             gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('active');
             resetGame();
             vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
             setTimeout(adjustBoardSize, 0);
@@ -509,7 +540,9 @@
             
             difficultyDisplay.textContent = difficultyMap[currentLevel];
             mainMenu.classList.add('hidden');
+            mainMenu.classList.remove('active');
             gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('active');
             isPaused = false;
             selectedCell = null;
             clearInterval(timerInterval);
@@ -569,7 +602,7 @@
             const size = Math.min(containerWidth, containerHeight);
             sudokuBoard.style.width = `${size}px`;
             sudokuBoard.style.height = `${size}px`;
-            const fontSize = `${size / 20}px`;
+            const fontSize = `${size / 18}px`; // Slightly larger font
             sudokuBoard.querySelectorAll('td').forEach(cell => cell.style.fontSize = fontSize);
         }
 
@@ -577,7 +610,7 @@
             if (isPaused) return;
             audioManager.playSound('click');
             if (selectedCell === cell) {
-                selectedCell.classList.remove('selected');
+                cell.classList.remove('selected');
                 selectedCell = null;
                 clearHighlights();
                 return;
@@ -585,7 +618,7 @@
             if (selectedCell) selectedCell.classList.remove('selected');
             clearHighlights();
             selectedCell = cell;
-            selectedCell.classList.add('selected');
+            cell.classList.add('selected');
             const row = cell.dataset.row;
             const col = cell.dataset.col;
             highlightArea(row, col);
@@ -616,8 +649,8 @@
             } else {
                 if(num !== null) selectedCell.classList.remove('incorrect');
                 clearHighlights();
-                if (num) highlightNumber(num);
                 highlightArea(r,c);
+                if (num) highlightNumber(num);
                 selectedCell.classList.add('selected');
                 checkWin();
             }
@@ -671,8 +704,8 @@
             for (let i = 0; i < 3; i++) {
                 const heart = document.createElement('span');
                 heart.innerHTML = i < lives
-                    ? `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>`
-                    : `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="opacity: 0.3;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>`;
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
                 livesDisplay.appendChild(heart);
             }
         }
@@ -726,16 +759,21 @@
             }
         }
 
-        function loadTheme() {
-            const currentTheme = localStorage.getItem('sudokuTheme') || 'light';
-            document.body.dataset.theme = currentTheme;
+        function updateThemeUI(theme) {
+            document.body.dataset.theme = theme;
+            localStorage.setItem('sudokuTheme', theme);
+            if (theme === 'light') {
+                sunIcon.classList.add('icon-active');
+                moonIcon.classList.remove('icon-active');
+            } else {
+                sunIcon.classList.remove('icon-active');
+                moonIcon.classList.add('icon-active');
+            }
         }
-
         function toggleTheme() {
+            const newTheme = (localStorage.getItem('sudokuTheme') || 'light') === 'light' ? 'dark' : 'light';
+            updateThemeUI(newTheme);
             audioManager.playSound('click');
-            const newTheme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
-            document.body.dataset.theme = newTheme;
-            localStorage.setItem('sudokuTheme', newTheme);
         }
 
         function updateStatsOnWin() {
@@ -807,17 +845,17 @@
                 numberPad.appendChild(btn);
             }
            
-            const hintBtnPad = document.createElement('button');
-            hintBtnPad.className = 'control-button hint-button';
-            hintBtnPad.innerHTML = `💡<span class="ad-badge">Ad</span>`;
-            hintBtnPad.onclick = handleHint;
+            const hintBtn = document.createElement('button');
+            hintBtn.className = 'control-button hint-button';
+            hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><span class="ad-badge">Ad</span>`;
+            hintBtn.onclick = handleHint;
            
             const eraseBtn = document.createElement('button');
             eraseBtn.className = 'control-button';
-            eraseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.12c.36.53.9.88 1.59.88h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3.7 13.3a.996.996 0 0 1-1.41 0L14 13.41l-2.89 2.89a.996.996 0 1 1-1.41-1.41L12.59 12 9.7 9.11a.996.996 0 1 1 1.41-1.41L14 10.59l2.89-2.89a.996.996 0 1 1 1.41 1.41L15.41 12l2.89 2.89c.38.38.38 1.03 0 1.41z"></path></svg>`;
+            eraseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 7.5l-15 15-5-5 15-15 5 5z"></path><path d="M10.5 5.5L18 13"></path></svg>`;
             eraseBtn.onclick = () => handleNumberInput(null);
 
-            actionPad.appendChild(hintBtnPad);
+            actionPad.appendChild(hintBtn);
             actionPad.appendChild(eraseBtn);
            
             pauseBtn.addEventListener('click', togglePause);
@@ -892,6 +930,4 @@
     </script>
 </body>
 </html>
-
-
 
