@@ -19,23 +19,23 @@
             --bg-light: #F8FAFC;
             --surface-light: #FFFFFF;
             --primary-light: #14B8A6; 
-            --primary-light-transparent: #14b8a61a;
+            --primary-light-transparent: #14b8a633; /* Increased opacity */
             --text-primary-light: #0F172A;
             --text-secondary-light: #64748B;
             --border-light: #E2E8F0;
             --error-light: #F43F5E;
-            --highlight-light: #F1F5F9;
+            --highlight-light: #E2E8F0; /* Made brighter/stronger */
 
             /* Dark Theme */
             --bg-dark: #0F172A;
             --surface-dark: #1E293B;
             --primary-dark: #2DD4BF;
-            --primary-dark-transparent: #2dd4bf1a;
+            --primary-dark-transparent: #2dd4bf33; /* Increased opacity */
             --text-primary-dark: #F1F5F9;
             --text-secondary-dark: #94A3B8;
             --border-dark: #334155;
             --error-dark: #FB7185;
-            --highlight-dark: #334155;
+            --highlight-dark: #475569; /* Made brighter/stronger */
         }
 
         [data-theme="dark"] {
@@ -121,19 +121,20 @@
         .player-number { color: var(--primary-light); font-weight: 600; }
         .incorrect { color: var(--error-light) !important; animation: shake 0.3s; }
         .highlight-area { background-color: var(--highlight-light) !important; }
-        .highlight-number { background-color: var(--primary-light-transparent) !important; }
+        .highlight-number { background-color: var(--primary-light-transparent) !important; font-weight: 700; }
         .selected::after {
             content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
             border: 3px solid var(--primary-light); border-radius: 8px;
         }
 
         /* Controls */
-        #controls { display: flex; flex-direction: column; gap: 15px; padding-top: 10px; width: 100%; flex-shrink: 0; }
+        #controls { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; width: 100%; flex-shrink: 0; }
         #number-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: min(2vw, 8px); }
-        #action-pad { display: flex; justify-content: center; gap: min(2vw, 8px); }
+        #action-pad { display: grid; grid-template-columns: 1fr 1fr; gap: min(4vw, 15px); max-width: 180px; margin: 0 auto;}
+        
         .control-button {
             background-color: var(--surface-light); color: var(--text-primary-light);
-            font-size: clamp(1.2rem, 4vh, 1.8rem); font-weight: 600;
+            font-size: clamp(1.4rem, 5vh, 2rem); font-weight: 600;
             border: 1px solid var(--border-light);
             cursor: pointer; transition: all 0.2s ease;
             display: flex; justify-content: center; align-items: center;
@@ -142,9 +143,8 @@
             border-radius: 50%;
             aspect-ratio: 1/1;
         }
-        .control-button.action { width: 60px; height: 60px; }
+        .control-button.action svg { width: 32px; height: 32px; }
         .control-button:active { transform: scale(0.95); background-color: var(--highlight-light); }
-        .control-button svg { width: 28px; height: 28px; }
         .ad-badge {
             position: absolute; top: 2px; right: 2px;
             background-color: var(--primary-light); color: white;
@@ -179,6 +179,7 @@
         .stats-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .stats-table th, .stats-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-light); }
         .stats-table th { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary-light); text-transform: uppercase; }
+        .stats-table td { font-weight: 500; }
         .stats-table td:last-child { text-align: right; font-weight: 600; }
         .stats-table tbody tr:last-child td { border-bottom: none; }
 
@@ -242,6 +243,7 @@
         vkBridge.send('VKWebAppInit');
         document.addEventListener('contextmenu', e => e.preventDefault());
        
+        // --- DOM Elements ---
         const mainMenu = document.getElementById('main-menu');
         const gameScreen = document.getElementById('game-screen');
         const sudokuBoard = document.getElementById('sudoku-board');
@@ -257,6 +259,7 @@
         const modalContainer = document.getElementById('modal-container');
         const bgMusic = document.getElementById('bg-music');
         
+        // --- Game State ---
         let vkUserId = null;
         let wasMusicPlaying = false;
         let timerInterval;
@@ -274,6 +277,7 @@
         let currentTheme = 'light';
         let savedGameState = null;
 
+        // --- Audio Manager ---
         const audioManager = {
             isReady: false,
             init() {
@@ -304,7 +308,7 @@
                     bgMusic.pause();
                 } else {
                     const isAnyScreenActive = mainMenu.classList.contains('active') || gameScreen.classList.contains('active');
-                    if (isAnyScreenActive) {
+                    if (isAnyScreenActive && !bgMusic.paused) {
                          bgMusic.play().catch(e => {});
                     }
                 }
@@ -313,6 +317,7 @@
             }
         };
 
+        // --- Modals ---
         function showModal(id, content) {
             const modal = document.createElement('div');
             modal.id = id;
@@ -326,7 +331,6 @@
                 if(id !== 'continue-modal') hideModal(id);
             });
         }
-
         function hideModal(id) {
             const modal = document.getElementById(id);
             if (modal) {
@@ -337,24 +341,7 @@
             }
         }
 
-        async function init() {
-            try {
-                const user = await vkBridge.send('VKWebAppGetUserInfo');
-                vkUserId = user.id;
-            } catch (error) { vkUserId = 'test_user'; }
-            
-            await loadData();
-            updateThemeUI(currentTheme);
-            audioManager.toggleMute(isMuted);
-            addEventListeners();
-            
-            if (savedGameState) {
-                showContinueModal();
-            } else {
-                showMainMenu();
-            }
-        }
-
+        // --- Data Management ---
         async function saveData() {
             if (!vkUserId) return;
             const hasProgress = playerGrid.length > 0 && playerGrid.flat().some(cell => cell !== null);
@@ -364,7 +351,6 @@
                 await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_v4_${vkUserId}`, value: dataToSave });
             } catch (e) { localStorage.setItem(`sudoku_masters_data_v4_${vkUserId}`, dataToSave); }
         }
-
         async function loadData() {
             if (!vkUserId) return;
             let loadedData = null;
@@ -383,12 +369,12 @@
                 savedGameState = loadedData.savedGame || null;
             }
         }
-        
         function clearSavedGame() {
             savedGameState = null;
             saveData();
         }
        
+        // --- Screen Management ---
         function showMainMenu() {
             mainMenu.classList.remove('hidden');
             mainMenu.classList.add('active');
@@ -397,7 +383,6 @@
             if (!isMuted) bgMusic.play().catch(e => {});
             vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
         }
-
         function startGame(level) {
             currentLevel = level;
             difficultyDisplay.textContent = difficultyMap[level];
@@ -409,7 +394,6 @@
             vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
             setTimeout(adjustBoardSize, 0);
         }
-
         function continueGame() {
             if (!savedGameState) return;
             ({ playerGrid, initialGrid, solutionGrid, currentLevel, lives, elapsedTime } = savedGameState);
@@ -429,23 +413,9 @@
             setTimeout(adjustBoardSize, 0);
         }
        
-        function resetGame() {
-            lives = 3; elapsedTime = 0; isPaused = false; selectedCell = null;
-            clearInterval(timerInterval);
-            updateLivesDisplay();
-            generateSudoku();
-            drawBoard();
-            startTimer();
-        }
-
-        function updateThemeUI(theme) {
-            currentTheme = theme;
-            document.body.dataset.theme = theme;
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) themeToggle.checked = theme === 'dark';
-            saveData();
-        }
-
+        // --- Game Logic ---
+        function resetGame() { lives = 3; elapsedTime = 0; isPaused = false; selectedCell = null; clearInterval(timerInterval); updateLivesDisplay(); generateSudoku(); drawBoard(); startTimer(); }
+        function updateThemeUI(theme) { currentTheme = theme; document.body.dataset.theme = theme; const themeToggle = document.getElementById('theme-toggle'); if (themeToggle) themeToggle.checked = theme === 'dark'; saveData(); }
         function generateSudoku() { solutionGrid = createFullGrid(); initialGrid = JSON.parse(JSON.stringify(solutionGrid)); removeCells(initialGrid, difficultyLevels[currentLevel]); playerGrid = JSON.parse(JSON.stringify(initialGrid)); }
         function drawBoard() { sudokuBoard.innerHTML = ''; for (let r = 0; r < 9; r++) { const row = sudokuBoard.insertRow(); for (let c = 0; c < 9; c++) { const cell = row.insertCell(); cell.dataset.row = r; cell.dataset.col = c; const initialValue = initialGrid[r][c]; const playerValue = playerGrid[r][c]; if (initialValue !== null) { cell.textContent = initialValue; cell.classList.add('initial-number'); } else if (playerValue !== null) { cell.textContent = playerValue; cell.classList.add('player-number'); } } } }
         function adjustBoardSize() { const container = document.getElementById('board-wrapper'); if (!container || !sudokuBoard) return; const size = Math.min(container.clientWidth, container.clientHeight); sudokuBoard.style.width = `${size}px`; sudokuBoard.style.height = `${size}px`; sudokuBoard.style.fontSize = `${size / 18}px`; }
@@ -462,12 +432,15 @@
         function startTimer() { clearInterval(timerInterval); startTime = Date.now() - elapsedTime * 1000; timerInterval = setInterval(() => { elapsedTime = Math.floor((Date.now() - startTime) / 1000); const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0'), seconds = String(elapsedTime % 60).padStart(2, '0'); timerDisplay.textContent = `${minutes}:${seconds}`; }, 1000); }
         function togglePause() { audioManager.playSound('click'); isPaused = !isPaused; if (isPaused) { clearInterval(timerInterval); showPauseModal(); } else { startTimer(); hideModal('pause-modal'); } }
         function updateStatsOnWin() { if (!stats[currentLevel]) stats[currentLevel] = { wins: 0, bestTime: null }; const levelStats = stats[currentLevel]; levelStats.wins++; if (levelStats.bestTime === null || elapsedTime < levelStats.bestTime) { levelStats.bestTime = elapsedTime; } saveData(); }
+        
+        // --- Sudoku Generation ---
         function createFullGrid() { const grid = Array.from({ length: 9 }, () => Array(9).fill(null)); solveSudoku(grid); return grid; }
         function solveSudoku(grid) { const emptySpot = findEmptySpot(grid); if (!emptySpot) return true; const [row, col] = emptySpot; const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5); for (let num of nums) { if (isValid(grid, row, col, num)) { grid[row][col] = num; if (solveSudoku(grid)) return true; grid[row][col] = null; } } return false; }
         function findEmptySpot(grid) { for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (grid[r][c] === null) return [r, c]; return null; }
         function isValid(grid, row, col, num) { for (let i = 0; i < 9; i++) if (grid[row][i] === num || grid[i][col] === num) return false; const startRow = row - row % 3, startCol = col - col % 3; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (grid[i + startRow][j + startCol] === num) return false; return true; }
         function removeCells(grid, count) { let removed = 0; while (removed < count) { const row = Math.floor(Math.random() * 9), col = Math.floor(Math.random() * 9); if (grid[row][col] !== null) { grid[row][col] = null; removed++; } } }
 
+        // --- Event Listeners and Init ---
         function addEventListeners() {
             const click = (el, fn) => { if(el) el.addEventListener('click', () => { fn(); }); };
             
@@ -484,7 +457,7 @@
             click(pauseBtn, togglePause);
             sudokuBoard.addEventListener('click', handleCellClick);
 
-
+            // Number Pad
             numberPad.innerHTML = '';
             for(let i=1; i<=9; i++) {
                 const btn = document.createElement('button');
@@ -494,25 +467,64 @@
                 numberPad.appendChild(btn);
             }
            
-            actionPad.innerHTML = `<button id="erase-btn" class="control-button action"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg></button><button id="hint-btn" class="control-button action"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.09 16.05A6.47 6.47 0 0 1 12 18a6.5 6.5 0 0 1-5.9-8.83.5.5 0 0 1 .2-.66l.3-.23a.5.5 0 0 1 .66.22 4.5 4.5 0 0 0 8.48 0 .5.5 0 0 1 .66-.22l.3.23a.5.5 0 0 1 .2.66A6.47 6.47 0 0 1 15.09 16.05z"></path><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="M8.5 14.5h7"></path></svg><span class="ad-badge">Ad</span></button>`;
-            click(document.getElementById('hint-btn'), handleHint);
-            click(document.getElementById('erase-btn'), () => handleNumberInput(null));
+            // Action Pad
+            actionPad.innerHTML = '';
+            const hintBtn = document.createElement('button');
+            hintBtn.id = 'hint-btn';
+            hintBtn.className = 'control-button action';
+            hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zM9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1z"></path></svg><span class="ad-badge">Ad</span>`;
+            hintBtn.onclick = handleHint;
+            
+            const eraseBtn = document.createElement('button');
+            eraseBtn.id = 'erase-btn';
+            eraseBtn.className = 'control-button action';
+            eraseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`;
+            eraseBtn.onclick = () => handleNumberInput(null);
+            
+            actionPad.appendChild(hintBtn);
+            actionPad.appendChild(eraseBtn);
 
             window.addEventListener('resize', debounce(adjustBoardSize, 100));
             document.body.addEventListener('click', async () => { if (!audioManager.isReady) { await Tone.start(); audioManager.init(); audioManager.toggleMute(isMuted); }}, { once: true });
             
             vkBridge.subscribe(e => {
-                if (e.detail.type === 'VKWebAppViewHide') { if (!bgMusic.paused) { wasMusicPlaying = true; bgMusic.pause(); }}
-                if (e.detail.type === 'VKWebAppViewRestore') { if (wasMusicPlaying && !isMuted) bgMusic.play().catch(e => {}); wasMusicPlaying = false; }
+                if (e.detail.type === 'VKWebAppViewHide') {
+                    if (!bgMusic.paused) { wasMusicPlaying = true; bgMusic.pause(); }
+                    Tone.Master.mute = true;
+                }
+                if (e.detail.type === 'VKWebAppViewRestore') {
+                    if (wasMusicPlaying && !isMuted) bgMusic.play().catch(e => {});
+                    wasMusicPlaying = false;
+                    Tone.Master.mute = isMuted;
+                }
             });
         }
         
+        const debounce = (func, wait) => { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; };
+
+        // --- Modal Content and Handlers ---
         const showContinueModal = () => { showModal('continue-modal', `<h2>Сохраненная игра</h2><p>У вас есть незаконченная игра. Хотите продолжить?</p><div class="modal-buttons"><button id="continue-game-btn" class="menu-button primary">Продолжить</button><button id="new-game-continue-btn" class="menu-button">Начать заново</button></div>`); };
         const showPauseModal = () => { showModal('pause-modal', `<h2>Пауза</h2><div class="modal-buttons"><button id="resume-button" class="menu-button primary">Продолжить</button><button id="restart-button" class="menu-button">Начать заново</button><button id="settings-btn-pause" class="menu-button">Настройки</button><button id="main-menu-btn-pause" class="menu-button">Главное меню</button></div>`); };
         const showGameOverModal = () => { showModal('game-over-modal', `<h2>Вы проиграли</h2><div class="modal-buttons"><button id="extra-life-btn" class="menu-button primary">Доп. жизнь (Ad)</button><button id="restart-game-over-btn" class="menu-button">Начать заново</button><button id="main-menu-game-over-btn" class="menu-button">Главное меню</button></div>`); };
         const showWinModal = () => { showModal('win-modal', `<h2>Поздравляем!</h2><p id="completion-time">Время: ${timerDisplay.textContent}</p><div class="modal-buttons"><button id="new-game-win-btn" class="menu-button primary">Новая игра</button><button id="main-menu-win-btn" class="menu-button">Главное меню</button></div>`); };
-        const showStatsModal = () => { showModal('stats-modal', `<h3>Статистика</h3><div id="stats-table-container"></div><div class="modal-buttons"><button id="close-stats-btn" class="menu-button primary">Закрыть</button></div>`); const container = document.getElementById('stats-table-container'); container.innerHTML = ''; const table = document.createElement('table'); table.className = 'stats-table'; const headers = ['Сложность', 'Побед', 'Лучшее время']; const thead = document.createElement('thead'); const headerRow = document.createElement('tr'); headers.forEach(text => { const th = document.createElement('th'); th.textContent = text; headerRow.appendChild(th); }); thead.appendChild(headerRow); table.appendChild(tbody); const tbody = document.createElement('tbody'); Object.keys(difficultyLevels).forEach(levelKey => { const levelName = difficultyMap[levelKey]; const levelStats = stats[levelKey] || { wins: 0, bestTime: null }; const tr = document.createElement('tr'); const formatTime = (s) => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; const values = { 'Сложность': levelName, 'Побед': levelStats.wins || '—', 'Лучшее время': formatTime(levelStats.bestTime) }; headers.forEach(header => { const td = document.createElement('td'); td.textContent = values[header]; tr.appendChild(td); }); tbody.appendChild(tr); }); table.appendChild(tbody); container.appendChild(table); };
         const showSettingsModal = () => { showModal('settings-modal', `<h2>Настройки</h2><div class="settings-content"><div class="setting-row"><label for="sound-toggle">Звуки</label><label class="switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label></div><div class="setting-row"><label for="theme-toggle">Темная тема</label><label class="switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label></div></div><div class="modal-buttons"><button id="close-settings-btn" class="menu-button primary">Закрыть</button></div>`); document.getElementById('sound-toggle').checked = !isMuted; document.getElementById('theme-toggle').checked = currentTheme === 'dark'; document.getElementById('sound-toggle').onchange = (e) => audioManager.toggleMute(!e.target.checked); document.getElementById('theme-toggle').onchange = (e) => updateThemeUI(e.target.checked ? 'dark' : 'light'); };
+        const showStatsModal = () => {
+             showModal('stats-modal', `<h3>Статистика</h3><div id="stats-table-container"></div><div class="modal-buttons"><button id="close-stats-btn" class="menu-button primary">Закрыть</button></div>`);
+             const container = document.getElementById('stats-table-container');
+             const table = document.createElement('table');
+             table.className = 'stats-table';
+             table.innerHTML = `<thead><tr><th>Сложность</th><th>Побед</th><th>Лучшее время</th></tr></thead><tbody></tbody>`;
+             const tbody = table.querySelector('tbody');
+             Object.keys(difficultyLevels).forEach(levelKey => {
+                 const levelName = difficultyMap[levelKey];
+                 const levelStats = stats[levelKey] || { wins: 0, bestTime: null };
+                 const formatTime = s => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+                 const tr = document.createElement('tr');
+                 tr.innerHTML = `<td>${levelName}</td><td>${levelStats.wins || '—'}</td><td>${formatTime(levelStats.bestTime)}</td>`;
+                 tbody.appendChild(tr);
+             });
+             container.appendChild(table);
+        };
 
         modalContainer.addEventListener('click', e => {
             const target = e.target.closest('button');
@@ -520,7 +532,6 @@
             
             const id = target.id;
             const modalId = target.closest('.modal-overlay')?.id;
-
             const action = (fn) => { audioManager.playSound('click'); if(fn) fn(); };
             
             switch(id) {
@@ -540,10 +551,26 @@
             }
         });
 
+        async function init() {
+            try {
+                const user = await vkBridge.send('VKWebAppGetUserInfo');
+                vkUserId = user.id;
+            } catch (error) { vkUserId = 'test_user'; }
+            
+            await loadData();
+            updateThemeUI(currentTheme);
+            addEventListeners();
+            
+            if (savedGameState) {
+                showContinueModal();
+            } else {
+                showMainMenu();
+            }
+        }
+
         init();
     });
     </script>
 </body>
 </html>
-
 
