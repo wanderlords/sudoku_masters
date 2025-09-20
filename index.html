@@ -24,7 +24,7 @@
             --text-secondary-light: #64748B;
             --border-light: #E2E8F0;
             --error-light: #F43F5E;
-            --highlight-area-light: #dbeafe; /* New distinct highlight color */
+            --highlight-area-light: #dcfce7; /* Greenish highlight color */
 
             /* Dark Theme (Re-themed for better aesthetics) */
             --bg-dark: #111827;
@@ -35,7 +35,7 @@
             --text-secondary-dark: #9CA3AF;
             --border-dark: #374151;
             --error-dark: #FCA5A5;
-            --highlight-area-dark: #374151; /* Distinct highlight color */
+            --highlight-area-dark: #166534; /* Greenish highlight for dark theme */
         }
 
         [data-theme="dark"] {
@@ -136,37 +136,38 @@
         /* Controls */
         #controls {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             gap: 10px;
             width: 100%;
             flex-shrink: 0;
         }
+        #action-pad {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
         #number-pad { 
             display: grid; 
             grid-template-columns: repeat(9, 1fr); 
-            gap: min(1.5vw, 6px); /* Reduced gap */
-            width: 100%;
+            gap: min(1.5vw, 8px);
         }
         .control-button {
             background-color: var(--surface-light); color: var(--text-primary-light);
-            font-size: clamp(1.2rem, 4.5vw, 1.8rem); /* Adjusted font size */
+            font-size: clamp(1.2rem, 4.5vw, 1.8rem);
             font-weight: 600;
             border: 1px solid var(--border-light);
             cursor: pointer; transition: all 0.2s ease;
             display: flex; justify-content: center; align-items: center;
             position: relative;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            border-radius: 12px; /* Changed to rounded squares */
+            border-radius: 12px;
             aspect-ratio: 1/1;
         }
         .control-button.action {
-            flex-shrink: 0; /* Prevent shrinking */
-            width: clamp(55px, 15vw, 65px); /* Larger action buttons */
-            height: clamp(55px, 15vw, 65px);
-            border-radius: 16px;
+            width: clamp(60px, 18vw, 80px); /* Larger action buttons */
+            height: auto;
         }
-        .control-button.action svg { width: 50%; height: 50%; }
+        .control-button.action svg { width: 45%; height: 45%; }
         .control-button:active { transform: scale(0.95); background-color: var(--highlight-area-light); }
         .ad-badge {
             position: absolute; top: 5px; right: 5px;
@@ -442,12 +443,27 @@
 
         // --- Event Listeners and Init ---
         function setupControls() {
-            controlsContainer.innerHTML = ''; // Clear previous controls
+            controlsContainer.innerHTML = '';
+            
+            const actionPad = document.createElement('div');
+            actionPad.id = 'action-pad';
             
             const hintBtn = document.createElement('button');
             hintBtn.className = 'control-button action';
             hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zM9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1z"></path></svg><span class="ad-badge">Ad</span>`;
             hintBtn.onclick = handleHint;
+
+            const eraseBtn = document.createElement('button');
+            eraseBtn.className = 'control-button action';
+            eraseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`;
+            eraseBtn.onclick = () => handleNumberInput(null);
+
+            actionPad.appendChild(hintBtn);
+            // This is a spacer to push the erase button to the right
+            const spacer = document.createElement('div');
+            spacer.style.flexGrow = '1';
+            actionPad.appendChild(spacer);
+            actionPad.appendChild(eraseBtn);
 
             const numberPad = document.createElement('div');
             numberPad.id = 'number-pad';
@@ -459,14 +475,8 @@
                 numberPad.appendChild(btn);
             }
             
-            const eraseBtn = document.createElement('button');
-            eraseBtn.className = 'control-button action';
-            eraseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`;
-            eraseBtn.onclick = () => handleNumberInput(null);
-            
-            controlsContainer.appendChild(hintBtn);
+            controlsContainer.appendChild(actionPad);
             controlsContainer.appendChild(numberPad);
-            controlsContainer.appendChild(eraseBtn);
         }
 
         function addEventListeners() {
