@@ -19,23 +19,23 @@
             --bg-light: #F8FAFC;
             --surface-light: #FFFFFF;
             --primary-light: #14B8A6; 
-            --primary-light-transparent: #14b8a633; /* Increased opacity */
+            --primary-light-transparent: #14b8a633;
             --text-primary-light: #0F172A;
             --text-secondary-light: #64748B;
             --border-light: #E2E8F0;
             --error-light: #F43F5E;
-            --highlight-light: #E2E8F0; /* Made brighter/stronger */
+            --highlight-area-light: #dbeafe; /* New distinct highlight color */
 
-            /* Dark Theme */
-            --bg-dark: #0F172A;
-            --surface-dark: #1E293B;
-            --primary-dark: #2DD4BF;
-            --primary-dark-transparent: #2dd4bf33; /* Increased opacity */
-            --text-primary-dark: #F1F5F9;
-            --text-secondary-dark: #94A3B8;
-            --border-dark: #334155;
-            --error-dark: #FB7185;
-            --highlight-dark: #475569; /* Made brighter/stronger */
+            /* Dark Theme (Re-themed for better aesthetics) */
+            --bg-dark: #111827;
+            --surface-dark: #1F2937;
+            --primary-dark: #5EEAD4;
+            --primary-dark-transparent: #5eead433;
+            --text-primary-dark: #E5E7EB;
+            --text-secondary-dark: #9CA3AF;
+            --border-dark: #374151;
+            --error-dark: #FCA5A5;
+            --highlight-area-dark: #374151; /* Distinct highlight color */
         }
 
         [data-theme="dark"] {
@@ -47,14 +47,14 @@
             --text-secondary-light: var(--text-secondary-dark);
             --border-light: var(--border-dark);
             --error-light: var(--error-dark);
-            --highlight-light: var(--highlight-dark);
+            --highlight-area-light: var(--highlight-area-dark);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overscroll-behavior-y: contain; }
         body { font-family: var(--font-family); background-color: var(--bg-light); color: var(--text-primary-light); display: flex; justify-content: center; align-items: center; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
        
-        #app { width: 100%; height: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; padding-top: env(safe-area-inset-top, 15px); padding-bottom: env(safe-area-inset-bottom, 15px); user-select: none; -webkit-user-select: none; }
+        #app { width: 100%; height: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 15px; padding-top: env(safe-area-inset-top, 15px); padding-bottom: env(safe-area-inset-bottom, 15px); user-select: none; -webkit-user-select: none; }
         .hidden { display: none !important; }
 
         /* Main Menu */
@@ -84,19 +84,25 @@
         .footer-button { background-color: var(--surface-light); border: 1px solid var(--border-light); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary-light); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); cursor: pointer; }
         .footer-button svg { width: 24px; height: 24px; }
 
-        /* Game Screen */
-        #game-screen { width: 100%; height: 100%; display: flex; flex-direction: column; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; width: 100%; flex-shrink: 0; }
+        /* Game Screen Layout */
+        #game-screen { 
+            width: 100%; 
+            height: 100%; 
+            display: grid;
+            grid-template-rows: auto 1fr auto; /* Header, Board, Controls */
+            gap: 10px;
+        }
+        header { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-shrink: 0; }
         .header-block { display: flex; align-items: center; gap: 5px; }
         .icon-button { background: none; border: none; cursor: pointer; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; color: var(--text-secondary-light); }
         .icon-button svg { width: 26px; height: 26px; }
-        #difficulty-display { background: var(--highlight-light); padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; }
+        #difficulty-display { background-color: var(--surface-light); border: 1px solid var(--border-light); padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; }
         #timer { font-weight: 600; font-size: 1.1rem; color: var(--text-secondary-light); min-width: 50px; text-align: right; }
         #lives { display: flex; gap: 4px; color: var(--error-light); }
        
         #board-wrapper {
             display: flex; justify-content: center; align-items: center;
-            width: 100%; flex-grow: 1; min-height: 0; padding: 10px 0;
+            width: 100%; min-height: 0;
         }
         #sudoku-board {
             border-collapse: collapse;
@@ -120,7 +126,7 @@
         .initial-number { color: var(--text-primary-light); font-weight: 700; }
         .player-number { color: var(--primary-light); font-weight: 600; }
         .incorrect { color: var(--error-light) !important; animation: shake 0.3s; }
-        .highlight-area { background-color: var(--highlight-light) !important; }
+        .highlight-area { background-color: var(--highlight-area-light) !important; }
         .highlight-number { background-color: var(--primary-light-transparent) !important; font-weight: 700; }
         .selected::after {
             content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
@@ -128,25 +134,42 @@
         }
 
         /* Controls */
-        #controls { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; width: 100%; flex-shrink: 0; }
-        #number-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: min(2vw, 8px); }
-        #action-pad { display: grid; grid-template-columns: 1fr 1fr; gap: min(4vw, 15px); max-width: 180px; margin: 0 auto;}
-        
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        #number-pad { 
+            display: grid; 
+            grid-template-columns: repeat(9, 1fr); 
+            gap: min(1.5vw, 6px); /* Reduced gap */
+            width: 100%;
+        }
         .control-button {
             background-color: var(--surface-light); color: var(--text-primary-light);
-            font-size: clamp(1.4rem, 5vh, 2rem); font-weight: 600;
+            font-size: clamp(1.2rem, 4.5vw, 1.8rem); /* Adjusted font size */
+            font-weight: 600;
             border: 1px solid var(--border-light);
             cursor: pointer; transition: all 0.2s ease;
             display: flex; justify-content: center; align-items: center;
             position: relative;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            border-radius: 50%;
+            border-radius: 12px; /* Changed to rounded squares */
             aspect-ratio: 1/1;
         }
-        .control-button.action svg { width: 32px; height: 32px; }
-        .control-button:active { transform: scale(0.95); background-color: var(--highlight-light); }
+        .control-button.action {
+            flex-shrink: 0; /* Prevent shrinking */
+            width: clamp(55px, 15vw, 65px); /* Larger action buttons */
+            height: clamp(55px, 15vw, 65px);
+            border-radius: 16px;
+        }
+        .control-button.action svg { width: 50%; height: 50%; }
+        .control-button:active { transform: scale(0.95); background-color: var(--highlight-area-light); }
         .ad-badge {
-            position: absolute; top: 2px; right: 2px;
+            position: absolute; top: 5px; right: 5px;
             background-color: var(--primary-light); color: white;
             padding: 1px 5px; border-radius: 6px; font-size: 9px;
             font-weight: 600; line-height: 1; border: 1px solid var(--surface-light);
@@ -230,8 +253,7 @@
                 <table id="sudoku-board"></table>
             </div>
             <div id="controls">
-                 <div id="action-pad"></div>
-                 <div id="number-pad"></div>
+                <!-- Controls are now generated dynamically -->
             </div>
         </div>
 
@@ -247,8 +269,7 @@
         const mainMenu = document.getElementById('main-menu');
         const gameScreen = document.getElementById('game-screen');
         const sudokuBoard = document.getElementById('sudoku-board');
-        const numberPad = document.getElementById('number-pad');
-        const actionPad = document.getElementById('action-pad');
+        const controlsContainer = document.getElementById('controls');
         const difficultyDisplay = document.getElementById('difficulty-display');
         const timerDisplay = document.getElementById('timer');
         const livesDisplay = document.getElementById('lives');
@@ -273,7 +294,8 @@
         let lives = 3;
         let isPaused = false;
         let stats = {};
-        let isMuted = false;
+        let isSfxMuted = false;
+        let isMusicMuted = false;
         let currentTheme = 'light';
         let savedGameState = null;
 
@@ -291,7 +313,7 @@
                 this.isReady = true;
             },
             playSound(sound) {
-                if (!this.isReady || isMuted) return;
+                if (!this.isReady || isSfxMuted) return;
                 try {
                     const now = Tone.now();
                     if (sound === 'click') this.clickSynth.triggerAttackRelease('E5', '8n', now);
@@ -299,62 +321,42 @@
                     if (sound === 'error') this.errorSynth.triggerAttackRelease('F#3', '8n', now);
                 } catch(e) { console.error("Sound play error", e); }
             },
-            toggleMute(forceState) {
-                isMuted = (typeof forceState === 'boolean') ? forceState : !isMuted;
-                if (document.getElementById('sound-toggle')) document.getElementById('sound-toggle').checked = !isMuted;
-                Tone.Master.mute = isMuted;
-                
-                if (isMuted) {
+            toggleSfxMute(forceState) {
+                isSfxMuted = (typeof forceState === 'boolean') ? forceState : !isSfxMuted;
+                if (document.getElementById('sound-toggle')) document.getElementById('sound-toggle').checked = !isSfxMuted;
+                Tone.Master.mute = isSfxMuted;
+                if(typeof forceState === 'undefined') saveData();
+            },
+            toggleMusicMute(forceState) {
+                isMusicMuted = (typeof forceState === 'boolean') ? forceState : !isMusicMuted;
+                if (document.getElementById('music-toggle')) document.getElementById('music-toggle').checked = !isMusicMuted;
+                if (isMusicMuted) {
                     bgMusic.pause();
                 } else {
-                    const isAnyScreenActive = mainMenu.classList.contains('active') || gameScreen.classList.contains('active');
-                    if (isAnyScreenActive && !bgMusic.paused) {
-                         bgMusic.play().catch(e => {});
-                    }
+                    bgMusic.play().catch(e => {});
                 }
-                
                 if(typeof forceState === 'undefined') saveData();
             }
         };
 
         // --- Modals ---
-        function showModal(id, content) {
-            const modal = document.createElement('div');
-            modal.id = id;
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `<div class="modal-content">${content}</div>`;
-            modalContainer.appendChild(modal);
-            modalContainer.classList.remove('hidden');
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target.closest('.modal-content')) return;
-                if(id !== 'continue-modal') hideModal(id);
-            });
-        }
-        function hideModal(id) {
-            const modal = document.getElementById(id);
-            if (modal) {
-                modal.remove();
-            }
-            if (modalContainer.children.length === 0) {
-                 modalContainer.classList.add('hidden');
-            }
-        }
+        function showModal(id, content) { const modal = document.createElement('div'); modal.id = id; modal.className = 'modal-overlay'; modal.innerHTML = `<div class="modal-content">${content}</div>`; modalContainer.appendChild(modal); modalContainer.classList.remove('hidden'); modal.addEventListener('click', (e) => { if (e.target.closest('.modal-content')) return; if(id !== 'continue-modal') hideModal(id); }); }
+        function hideModal(id) { const modal = document.getElementById(id); if (modal) { modal.remove(); } if (modalContainer.children.length === 0) { modalContainer.classList.add('hidden'); } }
 
         // --- Data Management ---
         async function saveData() {
             if (!vkUserId) return;
             const hasProgress = playerGrid.length > 0 && playerGrid.flat().some(cell => cell !== null);
             const gameStateToSave = hasProgress ? { playerGrid, initialGrid, solutionGrid, currentLevel, lives, elapsedTime } : null;
-            const dataToSave = JSON.stringify({ stats, isMuted, currentTheme, savedGame: gameStateToSave });
+            const dataToSave = JSON.stringify({ stats, isSfxMuted, isMusicMuted, currentTheme, savedGame: gameStateToSave });
             try {
-                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_v4_${vkUserId}`, value: dataToSave });
-            } catch (e) { localStorage.setItem(`sudoku_masters_data_v4_${vkUserId}`, dataToSave); }
+                await vkBridge.send('VKWebAppStorageSet', { key: `sudoku_masters_data_v5_${vkUserId}`, value: dataToSave });
+            } catch (e) { localStorage.setItem(`sudoku_masters_data_v5_${vkUserId}`, dataToSave); }
         }
         async function loadData() {
             if (!vkUserId) return;
             let loadedData = null;
-            const key = `sudoku_masters_data_v4_${vkUserId}`;
+            const key = `sudoku_masters_data_v5_${vkUserId}`;
             try {
                 const response = await vkBridge.send('VKWebAppStorageGet', { keys: [key] });
                 if (response.keys[0]?.value) loadedData = JSON.parse(response.keys[0].value);
@@ -364,15 +366,13 @@
             }
             if (loadedData) {
                 stats = loadedData.stats || {};
-                isMuted = loadedData.isMuted || false;
+                isSfxMuted = loadedData.isSfxMuted || false;
+                isMusicMuted = loadedData.isMusicMuted || false;
                 currentTheme = loadedData.currentTheme || 'light';
                 savedGameState = loadedData.savedGame || null;
             }
         }
-        function clearSavedGame() {
-            savedGameState = null;
-            saveData();
-        }
+        function clearSavedGame() { savedGameState = null; saveData(); }
        
         // --- Screen Management ---
         function showMainMenu() {
@@ -380,7 +380,7 @@
             mainMenu.classList.add('active');
             gameScreen.classList.add('hidden');
             gameScreen.classList.remove('active');
-            if (!isMuted) bgMusic.play().catch(e => {});
+            if (!isMusicMuted) bgMusic.play().catch(e => {});
             vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
         }
         function startGame(level) {
@@ -408,7 +408,7 @@
             updateLivesDisplay();
             drawBoard();
             startTimer();
-            if (!isMuted) bgMusic.play().catch(e => {});
+            if (!isMusicMuted) bgMusic.play().catch(e => {});
             vkBridge.send('VKWebAppShowBannerAd', { banner_location: 'bottom' }).catch(e => {});
             setTimeout(adjustBoardSize, 0);
         }
@@ -418,7 +418,7 @@
         function updateThemeUI(theme) { currentTheme = theme; document.body.dataset.theme = theme; const themeToggle = document.getElementById('theme-toggle'); if (themeToggle) themeToggle.checked = theme === 'dark'; saveData(); }
         function generateSudoku() { solutionGrid = createFullGrid(); initialGrid = JSON.parse(JSON.stringify(solutionGrid)); removeCells(initialGrid, difficultyLevels[currentLevel]); playerGrid = JSON.parse(JSON.stringify(initialGrid)); }
         function drawBoard() { sudokuBoard.innerHTML = ''; for (let r = 0; r < 9; r++) { const row = sudokuBoard.insertRow(); for (let c = 0; c < 9; c++) { const cell = row.insertCell(); cell.dataset.row = r; cell.dataset.col = c; const initialValue = initialGrid[r][c]; const playerValue = playerGrid[r][c]; if (initialValue !== null) { cell.textContent = initialValue; cell.classList.add('initial-number'); } else if (playerValue !== null) { cell.textContent = playerValue; cell.classList.add('player-number'); } } } }
-        function adjustBoardSize() { const container = document.getElementById('board-wrapper'); if (!container || !sudokuBoard) return; const size = Math.min(container.clientWidth, container.clientHeight); sudokuBoard.style.width = `${size}px`; sudokuBoard.style.height = `${size}px`; sudokuBoard.style.fontSize = `${size / 18}px`; }
+        function adjustBoardSize() { const container = document.getElementById('board-wrapper'); if (!container || !sudokuBoard) return; const size = Math.min(container.clientWidth, container.clientHeight); sudokuBoard.style.width = `${size}px`; sudokuBoard.style.height = `${size}px`; sudokuBoard.style.fontSize = `${size / 20}px`; }
         function handleCellClick(e) { const cell = e.target.closest('td'); if (!cell || isPaused) return; audioManager.playSound('click'); if (selectedCell === cell) { cell.classList.remove('selected'); selectedCell = null; clearHighlights(); return; } if (selectedCell) selectedCell.classList.remove('selected'); clearHighlights(); selectedCell = cell; cell.classList.add('selected'); const row = cell.dataset.row, col = cell.dataset.col; highlightArea(row, col); if (cell.textContent) highlightNumber(cell.textContent); }
         function handleNumberInput(num) { if (!selectedCell || selectedCell.classList.contains('initial-number') || isPaused) return; audioManager.playSound('click'); const r = parseInt(selectedCell.dataset.row), c = parseInt(selectedCell.dataset.col); if (num === null) { playerGrid[r][c] = null; selectedCell.textContent = ''; selectedCell.classList.remove('incorrect', 'player-number'); } else { playerGrid[r][c] = num; selectedCell.textContent = num; selectedCell.classList.add('player-number'); } saveData(); if (num !== null && num !== solutionGrid[r][c]) { selectedCell.classList.add('incorrect'); loseLife(); } else { if(num !== null) selectedCell.classList.remove('incorrect'); clearHighlights(); highlightArea(r,c); if (num) highlightNumber(num); selectedCell.classList.add('selected'); checkWin(); } }
         async function handleHint() { audioManager.playSound('click'); if(isPaused) return; try { await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }); const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }); if (adData.result) { const emptyCells = []; for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(playerGrid[r][c] === null) emptyCells.push({r, c}); if (emptyCells.length > 0) { const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)]; handleCellClick({ target: sudokuBoard.rows[randomCell.r].cells[randomCell.c] }); handleNumberInput(solutionGrid[randomCell.r][randomCell.c]); } } } catch (e) { console.error("Rewarded ad error:", e); } }
@@ -441,6 +441,34 @@
         function removeCells(grid, count) { let removed = 0; while (removed < count) { const row = Math.floor(Math.random() * 9), col = Math.floor(Math.random() * 9); if (grid[row][col] !== null) { grid[row][col] = null; removed++; } } }
 
         // --- Event Listeners and Init ---
+        function setupControls() {
+            controlsContainer.innerHTML = ''; // Clear previous controls
+            
+            const hintBtn = document.createElement('button');
+            hintBtn.className = 'control-button action';
+            hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zM9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1z"></path></svg><span class="ad-badge">Ad</span>`;
+            hintBtn.onclick = handleHint;
+
+            const numberPad = document.createElement('div');
+            numberPad.id = 'number-pad';
+            for (let i = 1; i <= 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'control-button';
+                btn.textContent = i;
+                btn.onclick = () => handleNumberInput(i);
+                numberPad.appendChild(btn);
+            }
+            
+            const eraseBtn = document.createElement('button');
+            eraseBtn.className = 'control-button action';
+            eraseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`;
+            eraseBtn.onclick = () => handleNumberInput(null);
+            
+            controlsContainer.appendChild(hintBtn);
+            controlsContainer.appendChild(numberPad);
+            controlsContainer.appendChild(eraseBtn);
+        }
+
         function addEventListeners() {
             const click = (el, fn) => { if(el) el.addEventListener('click', () => { fn(); }); };
             
@@ -456,36 +484,9 @@
             click(mainMenuSettingsBtn, () => { audioManager.playSound('click'); showSettingsModal(); });
             click(pauseBtn, togglePause);
             sudokuBoard.addEventListener('click', handleCellClick);
-
-            // Number Pad
-            numberPad.innerHTML = '';
-            for(let i=1; i<=9; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'control-button';
-                btn.textContent = i;
-                btn.onclick = () => handleNumberInput(i);
-                numberPad.appendChild(btn);
-            }
-           
-            // Action Pad
-            actionPad.innerHTML = '';
-            const hintBtn = document.createElement('button');
-            hintBtn.id = 'hint-btn';
-            hintBtn.className = 'control-button action';
-            hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zM9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1z"></path></svg><span class="ad-badge">Ad</span>`;
-            hintBtn.onclick = handleHint;
             
-            const eraseBtn = document.createElement('button');
-            eraseBtn.id = 'erase-btn';
-            eraseBtn.className = 'control-button action';
-            eraseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`;
-            eraseBtn.onclick = () => handleNumberInput(null);
-            
-            actionPad.appendChild(hintBtn);
-            actionPad.appendChild(eraseBtn);
-
             window.addEventListener('resize', debounce(adjustBoardSize, 100));
-            document.body.addEventListener('click', async () => { if (!audioManager.isReady) { await Tone.start(); audioManager.init(); audioManager.toggleMute(isMuted); }}, { once: true });
+            document.body.addEventListener('click', async () => { if (!audioManager.isReady) { await Tone.start(); audioManager.init(); audioManager.toggleSfxMute(isSfxMuted); if(!isMusicMuted) audioManager.toggleMusicMute(isMusicMuted); }}, { once: true });
             
             vkBridge.subscribe(e => {
                 if (e.detail.type === 'VKWebAppViewHide') {
@@ -493,9 +494,9 @@
                     Tone.Master.mute = true;
                 }
                 if (e.detail.type === 'VKWebAppViewRestore') {
-                    if (wasMusicPlaying && !isMuted) bgMusic.play().catch(e => {});
+                    if (wasMusicPlaying && !isMusicMuted) bgMusic.play().catch(e => {});
                     wasMusicPlaying = false;
-                    Tone.Master.mute = isMuted;
+                    Tone.Master.mute = isSfxMuted;
                 }
             });
         }
@@ -507,47 +508,30 @@
         const showPauseModal = () => { showModal('pause-modal', `<h2>Пауза</h2><div class="modal-buttons"><button id="resume-button" class="menu-button primary">Продолжить</button><button id="restart-button" class="menu-button">Начать заново</button><button id="settings-btn-pause" class="menu-button">Настройки</button><button id="main-menu-btn-pause" class="menu-button">Главное меню</button></div>`); };
         const showGameOverModal = () => { showModal('game-over-modal', `<h2>Вы проиграли</h2><div class="modal-buttons"><button id="extra-life-btn" class="menu-button primary">Доп. жизнь (Ad)</button><button id="restart-game-over-btn" class="menu-button">Начать заново</button><button id="main-menu-game-over-btn" class="menu-button">Главное меню</button></div>`); };
         const showWinModal = () => { showModal('win-modal', `<h2>Поздравляем!</h2><p id="completion-time">Время: ${timerDisplay.textContent}</p><div class="modal-buttons"><button id="new-game-win-btn" class="menu-button primary">Новая игра</button><button id="main-menu-win-btn" class="menu-button">Главное меню</button></div>`); };
-        const showSettingsModal = () => { showModal('settings-modal', `<h2>Настройки</h2><div class="settings-content"><div class="setting-row"><label for="sound-toggle">Звуки</label><label class="switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label></div><div class="setting-row"><label for="theme-toggle">Темная тема</label><label class="switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label></div></div><div class="modal-buttons"><button id="close-settings-btn" class="menu-button primary">Закрыть</button></div>`); document.getElementById('sound-toggle').checked = !isMuted; document.getElementById('theme-toggle').checked = currentTheme === 'dark'; document.getElementById('sound-toggle').onchange = (e) => audioManager.toggleMute(!e.target.checked); document.getElementById('theme-toggle').onchange = (e) => updateThemeUI(e.target.checked ? 'dark' : 'light'); };
-        const showStatsModal = () => {
-             showModal('stats-modal', `<h3>Статистика</h3><div id="stats-table-container"></div><div class="modal-buttons"><button id="close-stats-btn" class="menu-button primary">Закрыть</button></div>`);
-             const container = document.getElementById('stats-table-container');
-             const table = document.createElement('table');
-             table.className = 'stats-table';
-             table.innerHTML = `<thead><tr><th>Сложность</th><th>Побед</th><th>Лучшее время</th></tr></thead><tbody></tbody>`;
-             const tbody = table.querySelector('tbody');
-             Object.keys(difficultyLevels).forEach(levelKey => {
-                 const levelName = difficultyMap[levelKey];
-                 const levelStats = stats[levelKey] || { wins: 0, bestTime: null };
-                 const formatTime = s => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-                 const tr = document.createElement('tr');
-                 tr.innerHTML = `<td>${levelName}</td><td>${levelStats.wins || '—'}</td><td>${formatTime(levelStats.bestTime)}</td>`;
-                 tbody.appendChild(tr);
-             });
-             container.appendChild(table);
-        };
+        const showSettingsModal = () => { showModal('settings-modal', `<h2>Настройки</h2><div class="settings-content"><div class="setting-row"><label for="music-toggle">Музыка</label><label class="switch"><input type="checkbox" id="music-toggle"><span class="slider"></span></label></div><div class="setting-row"><label for="sound-toggle">Звуки (SFX)</label><label class="switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label></div><div class="setting-row"><label for="theme-toggle">Темная тема</label><label class="switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label></div></div><div class="modal-buttons"><button id="close-settings-btn" class="menu-button primary">Закрыть</button></div>`); document.getElementById('music-toggle').checked = !isMusicMuted; document.getElementById('sound-toggle').checked = !isSfxMuted; document.getElementById('theme-toggle').checked = currentTheme === 'dark'; document.getElementById('music-toggle').onchange = (e) => audioManager.toggleMusicMute(!e.target.checked); document.getElementById('sound-toggle').onchange = (e) => audioManager.toggleSfxMute(!e.target.checked); document.getElementById('theme-toggle').onchange = (e) => updateThemeUI(e.target.checked ? 'dark' : 'light'); };
+        const showStatsModal = () => { showModal('stats-modal', `<h3>Статистика</h3><div id="stats-table-container"></div><div class="modal-buttons"><button id="close-stats-btn" class="menu-button primary">Закрыть</button></div>`); const container = document.getElementById('stats-table-container'); const table = document.createElement('table'); table.className = 'stats-table'; table.innerHTML = `<thead><tr><th>Сложность</th><th>Побед</th><th>Лучшее время</th></tr></thead><tbody></tbody>`; const tbody = table.querySelector('tbody'); Object.keys(difficultyLevels).forEach(levelKey => { const levelName = difficultyMap[levelKey]; const levelStats = stats[levelKey] || { wins: 0, bestTime: null }; const formatTime = s => s === null ? '—' : `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; const tr = document.createElement('tr'); tr.innerHTML = `<td>${levelName}</td><td>${levelStats.wins || '—'}</td><td>${formatTime(levelStats.bestTime)}</td>`; tbody.appendChild(tr); }); container.appendChild(table); };
 
         modalContainer.addEventListener('click', e => {
             const target = e.target.closest('button');
             if (!target) return;
-            
             const id = target.id;
             const modalId = target.closest('.modal-overlay')?.id;
             const action = (fn) => { audioManager.playSound('click'); if(fn) fn(); };
             
             switch(id) {
-                case 'continue-game-btn':       action(() => { hideModal(modalId); continueGame(); }); break;
-                case 'new-game-continue-btn':   action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
-                case 'resume-button':           action(togglePause); break;
-                case 'restart-button':          action(() => { hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); }); break;
-                case 'settings-btn-pause':      action(showSettingsModal); break;
-                case 'main-menu-btn-pause':     action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
-                case 'extra-life-btn':          getExtraLife(); break;
-                case 'restart-game-over-btn':   action(() => { hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); }); break;
+                case 'continue-game-btn': action(() => { hideModal(modalId); continueGame(); }); break;
+                case 'new-game-continue-btn': action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
+                case 'resume-button': action(togglePause); break;
+                case 'restart-button': action(() => { hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); }); break;
+                case 'settings-btn-pause': action(showSettingsModal); break;
+                case 'main-menu-btn-pause': action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
+                case 'extra-life-btn': getExtraLife(); break;
+                case 'restart-game-over-btn': action(() => { hideModal(modalId); resetGame(); setTimeout(adjustBoardSize, 0); }); break;
                 case 'main-menu-game-over-btn': action(() => { hideModal(modalId); clearSavedGame(); showMainMenu(); }); break;
-                case 'new-game-win-btn':        action(() => { hideModal(modalId); startGame(Object.keys(difficultyLevels)[Math.floor(Math.random() * 4)]); }); break;
-                case 'main-menu-win-btn':       action(() => { hideModal(modalId); showMainMenu(); }); break;
-                case 'close-stats-btn':         action(() => hideModal(modalId)); break;
-                case 'close-settings-btn':      action(() => hideModal(modalId)); break;
+                case 'new-game-win-btn': action(() => { hideModal(modalId); startGame(Object.keys(difficultyLevels)[Math.floor(Math.random() * 4)]); }); break;
+                case 'main-menu-win-btn': action(() => { hideModal(modalId); showMainMenu(); }); break;
+                case 'close-stats-btn': action(() => hideModal(modalId)); break;
+                case 'close-settings-btn': action(() => hideModal(modalId)); break;
             }
         });
 
@@ -559,6 +543,7 @@
             
             await loadData();
             updateThemeUI(currentTheme);
+            setupControls();
             addEventListeners();
             
             if (savedGameState) {
@@ -573,4 +558,5 @@
     </script>
 </body>
 </html>
+
 
