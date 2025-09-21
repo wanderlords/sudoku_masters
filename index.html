@@ -35,7 +35,7 @@
             --text-secondary-dark: #9CA3AF;
             --border-dark: #374151;
             --error-dark: #FCA5A5;
-            --highlight-area-dark: #166534; /* Greenish highlight for dark theme */
+            --highlight-area-dark: #134e4a; /* More subtle dark teal highlight */
         }
 
         [data-theme="dark"] {
@@ -87,9 +87,9 @@
         /* Game Screen Layout */
         #game-screen { 
             width: 100%; 
-            height: 100%; 
-            display: grid;
-            grid-template-rows: auto 1fr auto; /* Header, Board, Controls */
+            /* height: 100%; REMOVED to allow content to dictate height */
+            display: flex;
+            flex-direction: column;
             gap: 10px;
         }
         header { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-shrink: 0; }
@@ -102,7 +102,9 @@
        
         #board-wrapper {
             display: flex; justify-content: center; align-items: center;
-            width: 100%; min-height: 0;
+            width: 100%; 
+            flex-grow: 1; /* Allows board to take up space but not push controls down */
+            min-height: 0;
         }
         #sudoku-board {
             border-collapse: collapse;
@@ -161,11 +163,13 @@
             position: relative;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             border-radius: 12px;
-            aspect-ratio: 1/1;
+        }
+        #number-pad .control-button {
+             aspect-ratio: 1 / 1.2; /* Taller than wide */
         }
         .control-button.action {
-            width: clamp(60px, 18vw, 80px); /* Larger action buttons */
-            height: auto;
+            width: clamp(60px, 18vw, 80px);
+            aspect-ratio: 1 / 1; /* Action buttons are square */
         }
         .control-button.action svg { width: 45%; height: 45%; }
         .control-button:active { transform: scale(0.95); background-color: var(--highlight-area-light); }
@@ -373,7 +377,24 @@
                 savedGameState = loadedData.savedGame || null;
             }
         }
-        function clearSavedGame() { savedGameState = null; saveData(); }
+        function clearSavedGame() {
+            savedGameState = null;
+            if (!vkUserId) return;
+            // Explicitly save a null game state to storage
+            const key = `sudoku_masters_data_v5_${vkUserId}`;
+            const dataToSave = JSON.stringify({
+                stats: stats,
+                isSfxMuted: isSfxMuted,
+                isMusicMuted: isMusicMuted,
+                currentTheme: currentTheme,
+                savedGame: null
+            });
+             try {
+                vkBridge.send('VKWebAppStorageSet', { key: key, value: dataToSave });
+            } catch (e) {
+                localStorage.setItem(key, dataToSave);
+            }
+        }
        
         // --- Screen Management ---
         function showMainMenu() {
@@ -421,7 +442,7 @@
         function drawBoard() { sudokuBoard.innerHTML = ''; for (let r = 0; r < 9; r++) { const row = sudokuBoard.insertRow(); for (let c = 0; c < 9; c++) { const cell = row.insertCell(); cell.dataset.row = r; cell.dataset.col = c; const initialValue = initialGrid[r][c]; const playerValue = playerGrid[r][c]; if (initialValue !== null) { cell.textContent = initialValue; cell.classList.add('initial-number'); } else if (playerValue !== null) { cell.textContent = playerValue; cell.classList.add('player-number'); } } } }
         function adjustBoardSize() { const container = document.getElementById('board-wrapper'); if (!container || !sudokuBoard) return; const size = Math.min(container.clientWidth, container.clientHeight); sudokuBoard.style.width = `${size}px`; sudokuBoard.style.height = `${size}px`; sudokuBoard.style.fontSize = `${size / 20}px`; }
         function handleCellClick(e) { const cell = e.target.closest('td'); if (!cell || isPaused) return; audioManager.playSound('click'); if (selectedCell === cell) { cell.classList.remove('selected'); selectedCell = null; clearHighlights(); return; } if (selectedCell) selectedCell.classList.remove('selected'); clearHighlights(); selectedCell = cell; cell.classList.add('selected'); const row = cell.dataset.row, col = cell.dataset.col; highlightArea(row, col); if (cell.textContent) highlightNumber(cell.textContent); }
-        function handleNumberInput(num) { if (!selectedCell || selectedCell.classList.contains('initial-number') || isPaused) return; audioManager.playSound('click'); const r = parseInt(selectedCell.dataset.row), c = parseInt(selectedCell.dataset.col); if (num === null) { playerGrid[r][c] = null; selectedCell.textContent = ''; selectedCell.classList.remove('incorrect', 'player-number'); } else { playerGrid[r][c] = num; selectedCell.textContent = num; selectedCell.classList.add('player-number'); } saveData(); if (num !== null && num !== solutionGrid[r][c]) { selectedCell.classList.add('incorrect'); loseLife(); } else { if(num !== null) selectedCell.classList.remove('incorrect'); clearHighlights(); highlightArea(r,c); if (num) highlightNumber(num); selectedCell.classList.add('selected'); checkWin(); } }
+        function handleNumberInput(num) { if (!selectedCell || selectedCell.classList.contains('initial-number') || isPaused) return; audioManager.playSound('click'); const r = parseInt(selectedCell.dataset.row), c = parseInt(selectedCell.dataset.col); if (num === null) { playerGrid[r][c] = null; selectedCell.textContent = ''; selectedCell.classList.remove('incorrect', 'player-number'); } else { playerGrid[r][c] = num; selectedCell.textContent = num; selectedCell.classList.add('player-number'); } saveData(); const isWin = checkWin(); if (!isWin && num !== null && num !== solutionGrid[r][c]) { selectedCell.classList.add('incorrect'); loseLife(); } else { if(num !== null) selectedCell.classList.remove('incorrect'); clearHighlights(); highlightArea(r,c); if (num) highlightNumber(num); selectedCell.classList.add('selected'); } }
         async function handleHint() { audioManager.playSound('click'); if(isPaused) return; try { await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }); const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }); if (adData.result) { const emptyCells = []; for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(playerGrid[r][c] === null) emptyCells.push({r, c}); if (emptyCells.length > 0) { const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)]; handleCellClick({ target: sudokuBoard.rows[randomCell.r].cells[randomCell.c] }); handleNumberInput(solutionGrid[randomCell.r][randomCell.c]); } } } catch (e) { console.error("Rewarded ad error:", e); } }
         function loseLife() { audioManager.playSound('error'); lives--; updateLivesDisplay(); if (lives <= 0) { clearInterval(timerInterval); showGameOverModal(); clearSavedGame(); } }
         async function getExtraLife() { audioManager.playSound('click'); try { await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' }); const adData = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }); if (adData.result) { lives++; updateLivesDisplay(); hideModal('game-over-modal'); startTimer(); } } catch (e) { console.error("Rewarded ad error:", e); } }
@@ -459,10 +480,6 @@
             eraseBtn.onclick = () => handleNumberInput(null);
 
             actionPad.appendChild(hintBtn);
-            // This is a spacer to push the erase button to the right
-            const spacer = document.createElement('div');
-            spacer.style.flexGrow = '1';
-            actionPad.appendChild(spacer);
             actionPad.appendChild(eraseBtn);
 
             const numberPad = document.createElement('div');
